@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "rank-bandit-lab"
+version = "0.1.0"
+description = "Educational ranking bandit simulation lab."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Rank Bandit Lab Contributors" }
+]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.scripts]
+rank-bandit-lab = "rank_bandit_lab.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/rank_bandit_lab"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "src/rank_bandit_lab",
+  "README.md",
+  "LICENSE",
+]
