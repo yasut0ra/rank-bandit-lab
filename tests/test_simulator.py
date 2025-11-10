@@ -39,3 +39,16 @@ class SimulatorTests(unittest.TestCase):
         self.assertEqual(summary["click_counts"]["a"], 1)
         self.assertEqual(summary["click_counts"]["b"], 1)
         self.assertEqual(summary["total_reward"], 2.0)
+
+    def test_round_metrics_tracks_cumulative_stats(self) -> None:
+        interactions = [
+            Interaction(("a",), ("a",), 0, 1.0, (0,)),
+            Interaction(("a",), ("a",), None, 0.0, ()),
+            Interaction(("a",), ("a",), 0, 1.0, (0,)),
+        ]
+        log = SimulationLog(interactions)
+        metrics = log.round_metrics()
+        self.assertEqual(len(metrics), 3)
+        self.assertEqual(metrics[0].cumulative_reward, 1.0)
+        self.assertEqual(metrics[1].cumulative_reward, 1.0)
+        self.assertAlmostEqual(metrics[2].ctr, 2.0 / 3.0)

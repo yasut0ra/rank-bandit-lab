@@ -31,6 +31,17 @@ rank-bandit-lab --model dependent --slate-size 3 \
 
 ドキュメント構成を変えたい場合は `--doc docA=0.45 --doc docB=0.2 ...` のように複数指定します。DCM の満足確率 (`--doc-satisfaction`) を指定しない場合は `--default-satisfaction` (既定 0.5) が使われます。
 
+### ビジュアライズ
+`pip install matplotlib` を行うと、学習曲線やドキュメント分布を PNG などで保存できます。
+
+```bash
+rank-bandit-lab --steps 5000 --slate-size 3 \
+  --plot-learning learning.png \
+  --plot-docs docs.png
+```
+
+`--show-plot` を付けると GUI 上で表示もできます（環境によっては非対応）。API からは `plot_learning_curve` / `plot_doc_distribution` またはデータ整形用の `learning_curve_data` / `doc_distribution_data` を利用してください。
+
 ### API で扱う場合
 ```python
 from random import Random
@@ -39,6 +50,7 @@ from rank_bandit_lab import (
     CascadeEnvironment,
     Document,
     EpsilonGreedyRanking,
+    plot_learning_curve,
 )
 
 documents = [
@@ -50,6 +62,7 @@ env = CascadeEnvironment(documents, slate_size=2, rng=Random(0))
 policy = EpsilonGreedyRanking([doc.doc_id for doc in documents], slate_size=2, epsilon=0.1)
 log = BanditSimulator(env, policy).run(rounds=1000)
 print(log.summary())
+plot_learning_curve(log, output_path="learning.png")
 ```
 
 `SimulationLog` では `total_reward` がクリック数の合計となり、PBM/DCM のように複数クリックが発生した場合にも集計されます。
