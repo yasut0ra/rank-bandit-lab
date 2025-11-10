@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Iterable, Sequence, Tuple
 
 
@@ -29,14 +29,23 @@ class Interaction:
     seen: Tuple[str, ...]
     click_index: int | None
     reward: float
+    click_positions: Tuple[int, ...] = field(default_factory=tuple)
 
     @property
     def clicked_doc_id(self) -> str | None:
         if self.click_index is None:
             return None
-        if self.click_index < 0 or self.click_index >= len(self.seen):
+        if self.click_index < 0 or self.click_index >= len(self.slate):
             return None
-        return self.seen[self.click_index]
+        return self.slate[self.click_index]
+
+    @property
+    def clicked_doc_ids(self) -> Tuple[str, ...]:
+        ids = []
+        for position in self.click_positions:
+            if 0 <= position < len(self.slate):
+                ids.append(self.slate[position])
+        return tuple(ids)
 
     def seen_set(self) -> set[str]:
         return set(self.seen)

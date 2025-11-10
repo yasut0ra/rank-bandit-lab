@@ -3,8 +3,8 @@ from random import Random
 
 from rank_bandit_lab.environment import CascadeEnvironment
 from rank_bandit_lab.policies import ThompsonSamplingRanking
-from rank_bandit_lab.simulator import BanditSimulator
-from rank_bandit_lab.types import Document
+from rank_bandit_lab.simulator import BanditSimulator, SimulationLog
+from rank_bandit_lab.types import Document, Interaction
 
 
 class SimulatorTests(unittest.TestCase):
@@ -25,3 +25,17 @@ class SimulatorTests(unittest.TestCase):
         self.assertGreaterEqual(summary["ctr"], 0.0)
         self.assertLessEqual(summary["ctr"], 1.0)
         self.assertGreaterEqual(sum(summary["seen_counts"].values()), summary["rounds"])
+
+    def test_simulation_log_counts_multiple_clicks(self) -> None:
+        interaction = Interaction(
+            slate=("a", "b"),
+            seen=("a", "b"),
+            click_index=0,
+            reward=2.0,
+            click_positions=(0, 1),
+        )
+        log = SimulationLog([interaction])
+        summary = log.summary()
+        self.assertEqual(summary["click_counts"]["a"], 1)
+        self.assertEqual(summary["click_counts"]["b"], 1)
+        self.assertEqual(summary["total_reward"], 2.0)
