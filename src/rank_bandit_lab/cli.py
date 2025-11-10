@@ -4,6 +4,7 @@ import argparse
 from random import Random
 from typing import Sequence
 
+from . import visualize
 from .environment import (
     CascadeEnvironment,
     DependentClickEnvironment,
@@ -86,6 +87,21 @@ def build_parser() -> argparse.ArgumentParser:
         help="(DCM) Fallback satisfaction probability when not specified per doc.",
     )
     parser.add_argument("--seed", type=int, default=7, help="Base random seed.")
+    parser.add_argument(
+        "--plot-learning",
+        metavar="PATH",
+        help="Save learning curve plot to PATH (requires matplotlib).",
+    )
+    parser.add_argument(
+        "--plot-docs",
+        metavar="PATH",
+        help="Save seen/click distribution plot to PATH (requires matplotlib).",
+    )
+    parser.add_argument(
+        "--show-plot",
+        action="store_true",
+        help="Display plots interactively (GUI/Matplotlib backend required).",
+    )
     return parser
 
 
@@ -206,6 +222,25 @@ def main(argv: Sequence[str] | None = None) -> None:
     log = simulator.run(args.steps)
     summary = log.summary()
     print_summary(summary, env.doc_ids)
+    if args.plot_learning or args.plot_docs or args.show_plot:
+        try:
+            if args.plot_learning or args.show_plot:
+                visualize.plot_learning_curve(
+                    log,
+                    output_path=args.plot_learning,
+                    show=args.show_plot,
+                )
+            if args.plot_docs:
+                visualize.plot_doc_distribution(
+                    log,
+                    doc_ids=env.doc_ids,
+                    output_path=args.plot_docs,
+                    show=args.show_plot,
+                )
+        except ImportError as exc:
+            parser.error(str(exc))
+        except ValueError as exc:
+            parser.error(str(exc))
 
 
 if __name__ == "__main__":
