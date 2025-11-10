@@ -98,6 +98,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Save seen/click distribution plot to PATH (requires matplotlib).",
     )
     parser.add_argument(
+        "--plot-regret",
+        metavar="PATH",
+        help="Save regret curve plot to PATH (requires matplotlib and environments with optimal reward support).",
+    )
+    parser.add_argument(
         "--show-plot",
         action="store_true",
         help="Display plots interactively (GUI/Matplotlib backend required).",
@@ -193,10 +198,15 @@ def create_environment(args: argparse.Namespace, documents: Sequence[Document]):
     raise ValueError(f"Unsupported model: {args.model}")
 
 
-def print_summary(summary: dict[str, object], doc_ids: Sequence[str]) -> None:
+def print_summary(summary: dict[str, object], doc_ids: Sequence[str], log) -> None:
     print(f"Rounds       : {summary['rounds']}")
     print(f"Total reward : {summary['total_reward']:.2f}")
     print(f"CTR          : {summary['ctr']:.4f}")
+    if log.optimal_reward is not None:
+        print(f"Optimal reward (per round): {log.optimal_reward:.4f}")
+        cumulative_regret = log.cumulative_regret()
+        if cumulative_regret is not None:
+            print(f"Cumulative regret        : {cumulative_regret:.4f}")
     print("Seen counts  :")
     seen_counts = summary["seen_counts"]
     for doc_id in doc_ids:
@@ -221,8 +231,8 @@ def main(argv: Sequence[str] | None = None) -> None:
     simulator = BanditSimulator(env, policy)
     log = simulator.run(args.steps)
     summary = log.summary()
-    print_summary(summary, env.doc_ids)
-    if args.plot_learning or args.plot_docs or args.show_plot:
+    print_summary(summary, env.doc_ids, log)
+    if args.plot_learning or args.plot_docs or args.plot_regret or args.show_plot:
         try:
             if args.plot_learning or args.show_plot:
                 visualize.plot_learning_curve(
@@ -235,6 +245,12 @@ def main(argv: Sequence[str] | None = None) -> None:
                     log,
                     doc_ids=env.doc_ids,
                     output_path=args.plot_docs,
+                    show=args.show_plot,
+                )
+            if args.plot_regret or args.show_plot:
+                visualize.plot_regret_curve(
+                    log,
+                    output_path=args.plot_regret,
                     show=args.show_plot,
                 )
         except ImportError as exc:
