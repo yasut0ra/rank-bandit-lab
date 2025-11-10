@@ -48,6 +48,29 @@ class SimulationLog:
             "click_counts": self.click_counts(),
         }
 
+    def round_metrics(self) -> List["RoundMetrics"]:
+        total = 0.0
+        metrics: list[RoundMetrics] = []
+        for index, event in enumerate(self.interactions, start=1):
+            total += event.reward
+            metrics.append(
+                RoundMetrics(
+                    round_index=index,
+                    reward=event.reward,
+                    cumulative_reward=total,
+                    ctr=(total / index),
+                )
+            )
+        return metrics
+
+
+@dataclass(frozen=True, slots=True)
+class RoundMetrics:
+    round_index: int
+    reward: float
+    cumulative_reward: float
+    ctr: float
+
 
 class BanditSimulator:
     """Executes a ranking bandit policy inside an environment."""
