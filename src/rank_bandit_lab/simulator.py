@@ -36,9 +36,7 @@ class SimulationLog:
     def click_counts(self) -> Dict[str, int]:
         counter: Counter[str] = Counter()
         for event in self.interactions:
-            clicked = event.clicked_doc_id
-            if clicked is not None:
-                counter[clicked] += 1
+            counter.update(event.clicked_doc_ids)
         return dict(counter)
 
     def summary(self) -> Dict[str, object]:
