@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import argparse
 from random import Random
-from typing import Iterable, Sequence
+from typing import Sequence
 
-from .environment import CascadeEnvironment
+from .environment import (
+    CascadeEnvironment,
+    DependentClickEnvironment,
+    PositionBasedEnvironment,
+)
 from .policies import EpsilonGreedyRanking, RankingPolicy, ThompsonSamplingRanking
 from .simulator import BanditSimulator
 from .types import Document
@@ -16,6 +20,8 @@ DEFAULT_DOCUMENTS = (
     Document("doc-D", 0.15),
     Document("doc-E", 0.10),
 )
+DEFAULT_POSITION_BIASES = (0.95, 0.85, 0.75, 0.65, 0.55)
+DEFAULT_SATISFACTION = 0.5
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -24,6 +30,12 @@ def build_parser() -> argparse.ArgumentParser:
         description="Run simple ranking bandit simulations.",
     )
     parser.add_argument("--algo", choices=("epsilon", "thompson"), default="epsilon")
+    parser.add_argument(
+        "--model",
+        choices=("cascade", "position", "dependent"),
+        default="cascade",
+        help="Click model / environment to simulate.",
+    )
     parser.add_argument("--steps", type=int, default=2_000, help="Number of interaction rounds.")
     parser.add_argument(
         "--slate-size",
@@ -54,6 +66,25 @@ def build_parser() -> argparse.ArgumentParser:
         action="append",
         help="Document specification formatted as 'doc_id=probability'.",
     )
+    parser.add_argument(
+        "--position-bias",
+        action="append",
+        dest="position_biases",
+        type=float,
+        help="(PBM) Examination probability per rank position.",
+    )
+    parser.add_argument(
+        "--doc-satisfaction",
+        action="append",
+        dest="doc_satisfaction",
+        help="(DCM) Satisfaction probability formatted 'doc_id=probability'.",
+    )
+    parser.add_argument(
+        "--default-satisfaction",
+        type=float,
+        default=DEFAULT_SATISFACTION,
+        help="(DCM) Fallback satisfaction probability when not specified per doc.",
+    )
     parser.add_argument("--seed", type=int, default=7, help="Base random seed.")
     return parser
 
@@ -77,6 +108,29 @@ def parse_documents(raw: Sequence[str] | None) -> Sequence[Document]:
     return documents
 
 
+def parse_probability_mapping(raw: Sequence[str] | None, label: str) -> dict[str, float]:
+    if not raw:
+        return {}
+    mapping: dict[str, float] = {}
+    for spec in raw:
+        if "=" not in spec:
+            raise ValueError(f"Invalid {label} spec '{spec}'. Expected 'id=value'.")
+        name, raw_val = spec.split("=", 1)
+        name = name.strip()
+        if not name:
+            raise ValueError(f"{label.title()} id missing in specification '{spec}'.")
+        try:
+            value = float(raw_val)
+        except ValueError as exc:
+            raise ValueError(f"Invalid probability '{raw_val}' in '{spec}'.") from exc
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(
+                f"{label.title()} probability for '{name}' must be in [0, 1], got {value}."
+            )
+        mapping[name] = value
+    return mapping
+
+
 def create_policy(args: argparse.Namespace, doc_ids: Sequence[str]) -> RankingPolicy:
     policy_rng = Random(args.seed + 1)
     if args.algo == "epsilon":
@@ -97,9 +151,35 @@ def create_policy(args: argparse.Namespace, doc_ids: Sequence[str]) -> RankingPo
     raise ValueError(f"Unsupported algorithm: {args.algo}")
 
 
+def create_environment(args: argparse.Namespace, documents: Sequence[Document]):
+    env_rng = Random(args.seed)
+    if args.model == "cascade":
+        return CascadeEnvironment(documents=documents, slate_size=args.slate_size, rng=env_rng)
+    if args.model == "position":
+        biases = args.position_biases or DEFAULT_POSITION_BIASES
+        if len(biases) < args.slate_size:
+            raise ValueError("Provide at least slate-size position biases for PBM.")
+        return PositionBasedEnvironment(
+            documents=documents,
+            slate_size=args.slate_size,
+            position_biases=biases,
+            rng=env_rng,
+        )
+    if args.model == "dependent":
+        satisfaction = parse_probability_mapping(args.doc_satisfaction, "satisfaction")
+        return DependentClickEnvironment(
+            documents=documents,
+            slate_size=args.slate_size,
+            satisfaction=satisfaction,
+            default_satisfaction=args.default_satisfaction,
+            rng=env_rng,
+        )
+    raise ValueError(f"Unsupported model: {args.model}")
+
+
 def print_summary(summary: dict[str, object], doc_ids: Sequence[str]) -> None:
     print(f"Rounds       : {summary['rounds']}")
-    print(f"Total reward : {summary['total_reward']:.0f}")
+    print(f"Total reward : {summary['total_reward']:.2f}")
     print(f"CTR          : {summary['ctr']:.4f}")
     print("Seen counts  :")
     seen_counts = summary["seen_counts"]
@@ -118,10 +198,9 @@ def main(argv: Sequence[str] | None = None) -> None:
     args = parser.parse_args(argv)
     try:
         documents = parse_documents(args.doc)
+        env = create_environment(args, documents)
     except ValueError as exc:
         parser.error(str(exc))
-    env_rng = Random(args.seed)
-    env = CascadeEnvironment(documents=documents, slate_size=args.slate_size, rng=env_rng)
     policy = create_policy(args, env.doc_ids)
     simulator = BanditSimulator(env, policy)
     log = simulator.run(args.steps)
