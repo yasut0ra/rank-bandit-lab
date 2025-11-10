@@ -20,6 +20,8 @@ class CascadeEnvironmentTests(unittest.TestCase):
         self.assertEqual(interaction.reward, 1.0)
         self.assertEqual(interaction.click_index, 0)
         self.assertEqual(interaction.seen, ("a",))
+        self.assertAlmostEqual(env.expected_reward(["a", "b"]), 1.0)
+        self.assertEqual(env.optimal_slate(), ("a", "b"))
 
     def test_handles_absence_of_click(self) -> None:
         env = CascadeEnvironment(
@@ -44,6 +46,7 @@ class CascadeEnvironmentTests(unittest.TestCase):
         self.assertNotIn("b", interaction.seen)
         self.assertEqual(interaction.click_positions, (0, 2))
         self.assertEqual(interaction.reward, 2.0)
+        self.assertAlmostEqual(env.expected_reward(["a", "c", "b"]), 2.0)
 
     def test_dependent_click_environment_stops_after_satisfaction(self) -> None:
         env = DependentClickEnvironment(
@@ -55,3 +58,4 @@ class CascadeEnvironmentTests(unittest.TestCase):
         interaction = env.evaluate(["a", "b"])
         self.assertEqual(interaction.seen, ("a",))
         self.assertEqual(interaction.click_positions, (0,))
+        self.assertAlmostEqual(env.expected_reward(["a", "b"]), 1.0)
