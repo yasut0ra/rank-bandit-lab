@@ -7,6 +7,12 @@ from .environment import (
 )
 from .policies import EpsilonGreedyRanking, RankingPolicy, ThompsonSamplingRanking
 from .simulator import BanditSimulator, SimulationLog
+from .visualize import (
+    doc_distribution_data,
+    learning_curve_data,
+    plot_doc_distribution,
+    plot_learning_curve,
+)
 from .types import Document, Interaction
 
 __all__ = [
@@ -20,4 +26,8 @@ __all__ = [
     "RankingPolicy",
     "SimulationLog",
     "ThompsonSamplingRanking",
+    "doc_distribution_data",
+    "learning_curve_data",
+    "plot_doc_distribution",
+    "plot_learning_curve",
 ]
