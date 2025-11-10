@@ -75,6 +75,18 @@ class CascadeEnvironment:
     def iter_documents(self) -> Iterable[Document]:
         return iter(self.documents)
 
+    def optimal_slate(self) -> Tuple[str, ...]:
+        ordered = sorted(self.doc_ids, key=lambda doc_id: self._doc_map[doc_id].attraction, reverse=True)
+        return tuple(ordered[: self.slate_size])
+
+    def expected_reward(self, slate: Sequence[str]) -> float:
+        ensure_known_documents(slate, set(self._doc_map))
+        normalized = normalize_slate(slate, self.slate_size)
+        prob_no_click = 1.0
+        for doc_id in normalized:
+            prob_no_click *= 1.0 - self._doc_map[doc_id].attraction
+        return 1.0 - prob_no_click
+
 
 class PositionBasedEnvironment:
     """Position-Based Model (PBM) where examination depends on position bias."""
@@ -130,6 +142,18 @@ class PositionBasedEnvironment:
             reward=reward,
             click_positions=tuple(click_positions),
         )
+
+    def optimal_slate(self) -> Tuple[str, ...]:
+        ordered = sorted(self.doc_ids, key=lambda doc_id: self._doc_map[doc_id].attraction, reverse=True)
+        return tuple(ordered[: self.slate_size])
+
+    def expected_reward(self, slate: Sequence[str]) -> float:
+        ensure_known_documents(slate, set(self._doc_map))
+        normalized = normalize_slate(slate, self.slate_size)
+        reward = 0.0
+        for position, doc_id in enumerate(normalized):
+            reward += self._position_biases[position] * self._doc_map[doc_id].attraction
+        return reward
 
 
 class DependentClickEnvironment:
@@ -193,3 +217,17 @@ class DependentClickEnvironment:
             reward=reward,
             click_positions=tuple(click_positions),
         )
+
+    def optimal_slate(self) -> Tuple[str, ...]:
+        ordered = sorted(self.doc_ids, key=lambda doc_id: self._doc_map[doc_id].attraction, reverse=True)
+        return tuple(ordered[: self.slate_size])
+
+    def expected_reward(self, slate: Sequence[str]) -> float:
+        ensure_known_documents(slate, set(self._doc_map))
+        normalized = normalize_slate(slate, self.slate_size)
+        reward = 0.0
+        continue_prob = 1.0
+        for doc_id in normalized:
+            reward += continue_prob * self._doc_map[doc_id].attraction
+            continue_prob *= 1.0 - self._doc_map[doc_id].attraction * self._satisfaction[doc_id]
+        return reward
