@@ -212,3 +212,9 @@ __marimo__/
 
 # JetBrains
 .idea/
+
+# Simulation artifacts
+learning*.png
+docs*.png
+plots/
+artifacts/
