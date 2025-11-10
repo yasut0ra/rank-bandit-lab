@@ -15,12 +15,15 @@ def learning_curve_data(log: SimulationLog) -> Dict[str, list[float]]:
     reward = [item.reward for item in metrics]
     cumulative = [item.cumulative_reward for item in metrics]
     ctr = [item.ctr for item in metrics]
-    return {
+    data = {
         "rounds": rounds,
         "reward": reward,
         "cumulative_reward": cumulative,
         "ctr": ctr,
     }
+    if log.optimal_reward is not None:
+        data["optimal_reward"] = [log.optimal_reward] * len(rounds)
+    return data
 
 
 def doc_distribution_data(log: SimulationLog, doc_ids: Sequence[str]) -> Dict[str, list[float]]:
@@ -36,6 +39,20 @@ def doc_distribution_data(log: SimulationLog, doc_ids: Sequence[str]) -> Dict[st
         "doc_ids": ordered_ids,
         "seen": seen,
         "clicks": clicks,
+    }
+
+
+def regret_curve_data(log: SimulationLog) -> Dict[str, list[float]]:
+    if log.optimal_reward is None:
+        raise ValueError("Regret data requires environments that expose optimal reward information.")
+    metrics = log.round_metrics()
+    rounds = [item.round_index for item in metrics]
+    instant = [item.instant_regret or 0.0 for item in metrics]
+    cumulative = [item.cumulative_regret or 0.0 for item in metrics]
+    return {
+        "rounds": rounds,
+        "instant_regret": instant,
+        "cumulative_regret": cumulative,
     }
 
 
@@ -60,6 +77,8 @@ def plot_learning_curve(
     ax2.plot(data["rounds"], data["ctr"], label="CTR", color="tab:orange")
     ax2.set_ylabel("CTR", color="tab:orange")
     ax2.tick_params(axis="y", labelcolor="tab:orange")
+    if "optimal_reward" in data:
+        ax1.axhline(y=data["optimal_reward"][0], color="tab:green", linestyle="--", label="Optimal Reward")
 
     lines, labels = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
@@ -106,6 +125,38 @@ def plot_doc_distribution(
     if show and not output_path:
         plt.show()
     elif show and output_path:
+        plt.show()
+    plt.close(fig)
+
+
+def plot_regret_curve(
+    log: SimulationLog,
+    output_path: str | None = None,
+    show: bool = False,
+) -> None:
+    data = regret_curve_data(log)
+    if not data["rounds"]:
+        raise ValueError("SimulationLog is empty; cannot plot regret curve.")
+    plt = _require_matplotlib()
+    fig, ax1 = plt.subplots(figsize=(8, 4.5))
+    ax1.plot(data["rounds"], data["cumulative_regret"], label="Cumulative Regret", color="tab:red")
+    ax1.set_xlabel("Round")
+    ax1.set_ylabel("Cumulative Regret", color="tab:red")
+    ax1.tick_params(axis="y", labelcolor="tab:red")
+
+    ax2 = ax1.twinx()
+    ax2.plot(data["rounds"], data["instant_regret"], label="Instant Regret", color="tab:purple", alpha=0.6)
+    ax2.set_ylabel("Instant Regret", color="tab:purple")
+    ax2.tick_params(axis="y", labelcolor="tab:purple")
+
+    lines, labels = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    fig.legend(lines + lines2, labels + labels2, loc="upper center", ncol=2)
+    fig.tight_layout()
+
+    if output_path:
+        fig.savefig(output_path, bbox_inches="tight")
+    if show:
         plt.show()
     plt.close(fig)
 

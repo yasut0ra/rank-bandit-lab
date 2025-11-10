@@ -6,7 +6,7 @@
 - `CascadeEnvironment` / `PositionBasedEnvironment` / `DependentClickEnvironment`: 異なるクリックモデルを切り替え可能なシミュレーション環境。
 - `EpsilonGreedyRanking` / `ThompsonSamplingRanking`: クリックフィードバックのみを使う基本的なランキングバンディット方策。
 - `BanditSimulator`: 方策を環境で反復実行し、CTR や各ドキュメントの露出/クリック回数を収集。
-- CLI (`rank-bandit-lab`): サンプルシナリオや任意の `doc_id=確率` 指定でシミュレーションを一発実行。
+- CLI (`rank-bandit-lab`): サンプルシナリオや任意の `doc_id=確率` 指定でシミュレーションを一発実行し、最適報酬との差分（リグレット）も追跡。
 
 ## 使い方
 ```bash
@@ -37,10 +37,13 @@ rank-bandit-lab --model dependent --slate-size 3 \
 ```bash
 rank-bandit-lab --steps 5000 --slate-size 3 \
   --plot-learning learning.png \
-  --plot-docs docs.png
+  --plot-docs docs.png \
+  --plot-regret regret.png
 ```
 
 `--show-plot` を付けると GUI 上で表示もできます（環境によっては非対応）。API からは `plot_learning_curve` / `plot_doc_distribution` またはデータ整形用の `learning_curve_data` / `doc_distribution_data` を利用してください。
+
+リグレットは「真の誘引確率を知っているオラクルが固定スレートで得られる期待報酬」と比較して算出します。`plot_regret_curve` や `regret_curve_data` を使うと、累積リグレットや瞬時リグレットの推移を可視化できます。
 
 ### API で扱う場合
 ```python
@@ -51,6 +54,7 @@ from rank_bandit_lab import (
     Document,
     EpsilonGreedyRanking,
     plot_learning_curve,
+    plot_regret_curve,
 )
 
 documents = [
@@ -63,6 +67,7 @@ policy = EpsilonGreedyRanking([doc.doc_id for doc in documents], slate_size=2, e
 log = BanditSimulator(env, policy).run(rounds=1000)
 print(log.summary())
 plot_learning_curve(log, output_path="learning.png")
+plot_regret_curve(log, output_path="regret.png")
 ```
 
 `SimulationLog` では `total_reward` がクリック数の合計となり、PBM/DCM のように複数クリックが発生した場合にも集計されます。

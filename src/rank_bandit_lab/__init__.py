@@ -10,8 +10,10 @@ from .simulator import BanditSimulator, SimulationLog
 from .visualize import (
     doc_distribution_data,
     learning_curve_data,
+    plot_regret_curve,
     plot_doc_distribution,
     plot_learning_curve,
+    regret_curve_data,
 )
 from .types import Document, Interaction
 
@@ -30,4 +32,6 @@ __all__ = [
     "learning_curve_data",
     "plot_doc_distribution",
     "plot_learning_curve",
+    "plot_regret_curve",
+    "regret_curve_data",
 ]

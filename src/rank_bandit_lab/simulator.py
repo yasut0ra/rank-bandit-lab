@@ -2,16 +2,29 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
-from typing import Dict, List
+from typing import Dict, List, Protocol, Sequence, Tuple
 
-from .environment import CascadeEnvironment
 from .policies import RankingPolicy
 from .types import Interaction
+
+
+class RankingEnvironment(Protocol):
+    doc_ids: Tuple[str, ...]
+
+    def evaluate(self, slate: Sequence[str]) -> Interaction:
+        ...
+
+    def optimal_slate(self) -> Tuple[str, ...]:
+        ...
+
+    def expected_reward(self, slate: Sequence[str]) -> float:
+        ...
 
 
 @dataclass(slots=True)
 class SimulationLog:
     interactions: List[Interaction]
+    optimal_reward: float | None = None
 
     @property
     def rounds(self) -> int:
@@ -51,17 +64,30 @@ class SimulationLog:
     def round_metrics(self) -> List["RoundMetrics"]:
         total = 0.0
         metrics: list[RoundMetrics] = []
+        optimal = self.optimal_reward
+        cumulative_regret = 0.0
         for index, event in enumerate(self.interactions, start=1):
             total += event.reward
+            instant_regret = None
+            if optimal is not None:
+                instant_regret = optimal - event.reward
+                cumulative_regret += instant_regret
             metrics.append(
                 RoundMetrics(
                     round_index=index,
                     reward=event.reward,
                     cumulative_reward=total,
                     ctr=(total / index),
+                    instant_regret=instant_regret,
+                    cumulative_regret=(cumulative_regret if optimal is not None else None),
                 )
             )
         return metrics
+
+    def cumulative_regret(self) -> float | None:
+        if self.optimal_reward is None:
+            return None
+        return self.rounds * self.optimal_reward - self.total_reward
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,12 +96,14 @@ class RoundMetrics:
     reward: float
     cumulative_reward: float
     ctr: float
+    instant_regret: float | None
+    cumulative_regret: float | None
 
 
 class BanditSimulator:
     """Executes a ranking bandit policy inside an environment."""
 
-    def __init__(self, env: CascadeEnvironment, policy: RankingPolicy) -> None:
+    def __init__(self, env: RankingEnvironment, policy: RankingPolicy) -> None:
         self._env = env
         self._policy = policy
 
@@ -88,4 +116,18 @@ class BanditSimulator:
             interaction = self._env.evaluate(slate)
             self._policy.update(interaction)
             history.append(interaction)
-        return SimulationLog(history)
+        optimal_reward = _infer_optimal_reward(self._env)
+        return SimulationLog(history, optimal_reward=optimal_reward)
+
+
+def _infer_optimal_reward(env: RankingEnvironment) -> float | None:
+    optimal_reward = None
+    optimal_slate = getattr(env, "optimal_slate", None)
+    expected_reward = getattr(env, "expected_reward", None)
+    if callable(optimal_slate) and callable(expected_reward):
+        try:
+            slate = optimal_slate()
+            optimal_reward = float(expected_reward(slate))
+        except Exception:  # pragma: no cover - fallback when methods raise
+            optimal_reward = None
+    return optimal_reward

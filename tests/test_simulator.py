@@ -25,6 +25,7 @@ class SimulatorTests(unittest.TestCase):
         self.assertGreaterEqual(summary["ctr"], 0.0)
         self.assertLessEqual(summary["ctr"], 1.0)
         self.assertGreaterEqual(sum(summary["seen_counts"].values()), summary["rounds"])
+        self.assertIsNotNone(log.optimal_reward)
 
     def test_simulation_log_counts_multiple_clicks(self) -> None:
         interaction = Interaction(
@@ -46,9 +47,10 @@ class SimulatorTests(unittest.TestCase):
             Interaction(("a",), ("a",), None, 0.0, ()),
             Interaction(("a",), ("a",), 0, 1.0, (0,)),
         ]
-        log = SimulationLog(interactions)
+        log = SimulationLog(interactions, optimal_reward=1.0)
         metrics = log.round_metrics()
         self.assertEqual(len(metrics), 3)
         self.assertEqual(metrics[0].cumulative_reward, 1.0)
         self.assertEqual(metrics[1].cumulative_reward, 1.0)
         self.assertAlmostEqual(metrics[2].ctr, 2.0 / 3.0)
+        self.assertIsNotNone(metrics[0].instant_regret)
