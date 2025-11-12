@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import argparse
 from random import Random
-from typing import Sequence
+from typing import Any, Mapping, Sequence, cast
 
-from . import visualize
 from . import logging as log_utils
+from . import scenario_loader, visualize
 from .environment import (
     CascadeEnvironment,
     DependentClickEnvironment,
@@ -14,10 +14,11 @@ from .environment import (
 from .policies import (
     EpsilonGreedyRanking,
     RankingPolicy,
+    SoftmaxRanking,
     ThompsonSamplingRanking,
     UCB1Ranking,
 )
-from .simulator import BanditSimulator
+from .simulator import BanditSimulator, SimulationLog
 from .types import Document
 
 DEFAULT_DOCUMENTS = (
@@ -38,7 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--algo",
-        choices=("epsilon", "thompson", "ucb"),
+        choices=("epsilon", "thompson", "ucb", "softmax"),
         default="epsilon",
     )
     parser.add_argument(
@@ -79,6 +80,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Exploration scale for UCB1 (larger -> more exploration).",
     )
     parser.add_argument(
+        "--softmax-temp",
+        type=float,
+        default=0.1,
+        help="Temperature for softmax/Boltzmann exploration.",
+    )
+    parser.add_argument(
         "--doc",
         action="append",
         help="Document specification formatted as 'doc_id=probability'.",
@@ -103,6 +110,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="(DCM) Fallback satisfaction probability when not specified per doc.",
     )
     parser.add_argument("--seed", type=int, default=7, help="Base random seed.")
+    parser.add_argument(
+        "--scenario",
+        choices=scenario_loader.list_scenarios(),
+        help="Use a predefined scenario (overrides docs/bias defaults).",
+    )
     parser.add_argument(
         "--plot-learning",
         metavar="PATH",
@@ -202,10 +214,19 @@ def create_policy(args: argparse.Namespace, doc_ids: Sequence[str]) -> RankingPo
             confidence=args.ucb_confidence,
             rng=policy_rng,
         )
+    if args.algo == "softmax":
+        return SoftmaxRanking(
+            doc_ids=doc_ids,
+            slate_size=args.slate_size,
+            temperature=args.softmax_temp,
+            rng=policy_rng,
+        )
     raise ValueError(f"Unsupported algorithm: {args.algo}")
 
 
-def create_environment(args: argparse.Namespace, documents: Sequence[Document]):
+def create_environment(
+    args: argparse.Namespace, documents: Sequence[Document]
+) -> CascadeEnvironment | PositionBasedEnvironment | DependentClickEnvironment:
     env_rng = Random(args.seed)
     if args.model == "cascade":
         return CascadeEnvironment(documents=documents, slate_size=args.slate_size, rng=env_rng)
@@ -231,7 +252,9 @@ def create_environment(args: argparse.Namespace, documents: Sequence[Document]):
     raise ValueError(f"Unsupported model: {args.model}")
 
 
-def print_summary(summary: dict[str, object], doc_ids: Sequence[str] | None, log) -> None:
+def print_summary(
+    summary: Mapping[str, Any], doc_ids: Sequence[str] | None, log: SimulationLog
+) -> None:
     print(f"Rounds       : {summary['rounds']}")
     print(f"Total reward : {summary['total_reward']:.2f}")
     print(f"CTR          : {summary['ctr']:.4f}")
@@ -241,13 +264,13 @@ def print_summary(summary: dict[str, object], doc_ids: Sequence[str] | None, log
         if cumulative_regret is not None:
             print(f"Cumulative regret        : {cumulative_regret:.4f}")
     print("Seen counts  :")
-    seen_counts = summary["seen_counts"]
+    seen_counts = cast(Mapping[str, int], summary["seen_counts"])
     ordered_ids = list(doc_ids) if doc_ids else list(seen_counts.keys())
     for doc_id in ordered_ids:
         count = seen_counts.get(doc_id, 0)
         print(f"  {doc_id:>8} -> {count}")
     print("Click counts :")
-    click_counts = summary["click_counts"]
+    click_counts = cast(Mapping[str, int], summary["click_counts"])
     for doc_id in ordered_ids:
         count = click_counts.get(doc_id, 0)
         print(f"  {doc_id:>8} -> {count}")
@@ -259,29 +282,53 @@ def main(argv: Sequence[str] | None = None) -> None:
     if args.load_json and args.log_json:
         parser.error("--log-json cannot be combined with --load-json.")
 
-    metadata: dict[str, object] = {}
+    metadata: dict[str, Any] = {}
     doc_ids: Sequence[str] | None = None
+    scenario_data: dict[str, Any] | None = None
+    scenario_doc_specs: list[str] | None = None
+    if args.scenario:
+        scenario_data = scenario_loader.load_scenario(args.scenario)
+        scenario_doc_specs = [
+            f"{entry['id']}={entry['attraction']}"
+            for entry in scenario_data.get("documents", [])
+        ]
     if args.load_json:
         try:
             log, metadata = log_utils.load_log(args.load_json)
         except (OSError, ValueError) as exc:
             parser.error(f"Failed to load log: {exc}")
-        doc_ids = metadata.get("doc_ids")
+        doc_ids = cast(Sequence[str] | None, metadata.get("doc_ids"))
     else:
+        doc_specs: Sequence[str] | None = args.doc if args.doc else scenario_doc_specs
+        if doc_specs is None:
+            parser.error("Either provide --doc entries or use --scenario.")
         try:
-            documents = parse_documents(args.doc)
-            env = create_environment(args, documents)
+            documents = parse_documents(doc_specs)
         except ValueError as exc:
             parser.error(str(exc))
-        policy = create_policy(args, env.doc_ids)
+        env_args = argparse.Namespace(**vars(args))
+        if scenario_data:
+            if env_args.position_biases is None and scenario_data.get("position_biases"):
+                env_args.position_biases = list(scenario_data["position_biases"])
+            if env_args.doc_satisfaction is None and scenario_data.get("satisfaction"):
+                env_args.doc_satisfaction = [
+                    f"{doc_id}={prob}"
+                    for doc_id, prob in scenario_data["satisfaction"].items()
+                ]
+        try:
+            env = create_environment(env_args, documents)
+        except ValueError as exc:
+            parser.error(str(exc))
+        policy = create_policy(env_args, env.doc_ids)
         simulator = BanditSimulator(env, policy)
-        log = simulator.run(args.steps)
+        log = simulator.run(env_args.steps)
         metadata = {
             "doc_ids": list(env.doc_ids),
-            "model": args.model,
-            "algo": args.algo,
-            "steps": args.steps,
-            "seed": args.seed,
+            "model": env_args.model,
+            "algo": env_args.algo,
+            "steps": env_args.steps,
+            "seed": env_args.seed,
+            "scenario": args.scenario,
         }
         if args.log_json:
             try:
@@ -290,8 +337,8 @@ def main(argv: Sequence[str] | None = None) -> None:
                 parser.error(f"Failed to write log: {exc}")
         doc_ids = env.doc_ids
 
-    summary = log.summary()
-    doc_ids_for_usage = doc_ids or metadata.get("doc_ids")
+    summary = cast(Mapping[str, Any], log.summary())
+    doc_ids_for_usage = cast(Sequence[str] | None, doc_ids or metadata.get("doc_ids"))
     print_summary(summary, doc_ids_for_usage, log)
     if args.plot_learning or args.plot_docs or args.plot_regret or args.show_plot:
         try:
@@ -302,9 +349,12 @@ def main(argv: Sequence[str] | None = None) -> None:
                     show=args.show_plot,
                 )
             if args.plot_docs:
+                fallback_ids = list(
+                    cast(Mapping[str, int], summary["seen_counts"]).keys()
+                )
                 visualize.plot_doc_distribution(
                     log,
-                    doc_ids=doc_ids_for_usage or tuple(summary["seen_counts"].keys()),
+                    doc_ids=doc_ids_for_usage or fallback_ids,
                     output_path=args.plot_docs,
                     show=args.show_plot,
                 )

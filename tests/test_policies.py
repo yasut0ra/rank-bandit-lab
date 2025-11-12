@@ -3,6 +3,7 @@ from random import Random
 
 from rank_bandit_lab.policies import (
     EpsilonGreedyRanking,
+    SoftmaxRanking,
     ThompsonSamplingRanking,
     UCB1Ranking,
 )
@@ -55,3 +56,18 @@ class PolicyTests(unittest.TestCase):
             policy.update(make_interaction(("b",), ("b",), None))
         slate = policy.select_slate()
         self.assertEqual(slate[0], "a")
+
+    def test_softmax_gives_preference_to_high_mean(self) -> None:
+        policy = SoftmaxRanking(
+            doc_ids=["a", "b"],
+            slate_size=1,
+            temperature=0.2,
+            rng=Random(2),
+        )
+        for _ in range(5):
+            policy.update(make_interaction(("a",), ("a",), 0))
+        for _ in range(5):
+            policy.update(make_interaction(("b",), ("b",), None))
+        weight_a = policy._weight("a")  # type: ignore[attr-defined]
+        weight_b = policy._weight("b")  # type: ignore[attr-defined]
+        self.assertGreater(weight_a, weight_b)

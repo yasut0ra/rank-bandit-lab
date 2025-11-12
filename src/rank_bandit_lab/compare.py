@@ -4,7 +4,7 @@ import argparse
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, List, Sequence
+from typing import Any, Mapping, Sequence, cast
 
 from . import logging as log_utils
 from .simulator import SimulationLog
@@ -24,19 +24,23 @@ class LogSummary:
     model: str | None
 
 
-def summarize(path: str) -> tuple[LogSummary, SimulationLog, dict]:
+def summarize(path: str) -> tuple[LogSummary, SimulationLog, dict[str, Any]]:
     log, metadata = log_utils.load_log(path)
-    summary = log.summary()
+    summary = cast(Mapping[str, Any], log.summary())
 
-    label = metadata.get("label") or Path(path).stem
-    algo = metadata.get("algo")
-    model = metadata.get("model")
+    label = cast(str, metadata.get("label") or Path(path).stem)
+    algo = cast(str | None, metadata.get("algo"))
+    model = cast(str | None, metadata.get("model"))
+    rounds = int(cast(float | int, summary["rounds"]))
+    ctr = float(cast(float | int, summary["ctr"]))
+    total_reward = float(cast(float | int, summary["total_reward"]))
+
     log_summary = LogSummary(
         label=label,
         path=str(path),
-        rounds=summary["rounds"],
-        ctr=summary["ctr"],
-        total_reward=summary["total_reward"],
+        rounds=rounds,
+        ctr=ctr,
+        total_reward=total_reward,
         optimal_reward=log.optimal_reward,
         cumulative_regret=log.cumulative_regret(),
         algo=algo,

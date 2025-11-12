@@ -33,9 +33,9 @@ class VisualizeDataTests(unittest.TestCase):
             optimal_reward=0.7,
         )
         data = doc_distribution_data(log, ["b", "a"])
-        self.assertEqual(data["doc_ids"], ["b", "a"])
-        self.assertEqual(data["seen"], [2, 1])
-        self.assertEqual(data["clicks"], [0, 1])
+        self.assertEqual(data.doc_ids, ["b", "a"])
+        self.assertEqual(data.seen, [2.0, 1.0])
+        self.assertEqual(data.clicks, [0.0, 1.0])
 
     def test_regret_curve_data(self) -> None:
         log = SimulationLog(

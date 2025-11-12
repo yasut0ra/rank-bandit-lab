@@ -9,7 +9,10 @@ from .types import Interaction
 
 
 class RankingEnvironment(Protocol):
-    doc_ids: Tuple[str, ...]
+
+    @property
+    def doc_ids(self) -> Tuple[str, ...]:
+        ...
 
     def evaluate(self, slate: Sequence[str]) -> Interaction:
         ...

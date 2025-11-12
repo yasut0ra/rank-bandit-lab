@@ -4,7 +4,7 @@
 
 ## 主なコンポーネント
 - `CascadeEnvironment` / `PositionBasedEnvironment` / `DependentClickEnvironment`: 異なるクリックモデルを切り替え可能なシミュレーション環境。
-- `EpsilonGreedyRanking` / `ThompsonSamplingRanking` / `UCB1Ranking`: クリックフィードバックのみを使う基本的なランキングバンディット方策。
+- `EpsilonGreedyRanking` / `ThompsonSamplingRanking` / `UCB1Ranking` / `SoftmaxRanking`: クリックフィードバックのみを使う基本的なランキングバンディット方策。
 - `BanditSimulator`: 方策を環境で反復実行し、CTR や各ドキュメントの露出/クリック回数を収集。
 - CLI (`rank-bandit-lab`): サンプルシナリオや任意の `doc_id=確率` 指定でシミュレーションを一発実行し、最適報酬との差分（リグレット）も追跡。
 
@@ -23,6 +23,9 @@ rank-bandit-lab --algo epsilon --epsilon 0.15 --steps 3000 --slate-size 3
 # 上限信頼区間 (UCB1)
 rank-bandit-lab --algo ucb --ucb-confidence 1.5 --steps 3000 --slate-size 3
 
+# ソフトマックス探索
+rank-bandit-lab --algo softmax --softmax-temp 0.2 --steps 3000 --slate-size 3
+
 # 位置バイアスを持つ Position-Based Model
 rank-bandit-lab --model position --slate-size 3 \
   --position-bias 0.95 --position-bias 0.8 --position-bias 0.6
@@ -33,6 +36,11 @@ rank-bandit-lab --model dependent --slate-size 3 \
 ```
 
 ドキュメント構成を変えたい場合は `--doc docA=0.45 --doc docB=0.2 ...` のように複数指定します。DCM の満足確率 (`--doc-satisfaction`) を指定しない場合は `--default-satisfaction` (既定 0.5) が使われます。
+
+### シナリオプリセット
+`--scenario news_headlines` のように指定すると、定義済みのドキュメントやバイアスを読み込んで実験できます。利用可能な値は `news_headlines`, `ecommerce_longtail` など `rank_bandit_lab.scenarios` 配下の JSON です。
+
+詳細な流れは `docs/TUTORIAL.md` と `notebooks/bandit_walkthrough.ipynb` を参照してください。CLI → ログ → 可視化 → スイープの一連の操作例がまとまっています。
 
 ### ビジュアライズ
 `pip install matplotlib` を行うと、学習曲線やドキュメント分布を PNG などで保存できます。
@@ -106,3 +114,14 @@ log2, metadata = load_log("latest.json")
 ```
 python -m unittest discover -s tests -v
 ```
+
+## 開発者向け
+
+lint / 型チェック:
+
+```
+ruff check .
+mypy src
+```
+
+CI は GitHub Actions (`.github/workflows/ci.yml`) で ruff / mypy / unittest を実行しています。

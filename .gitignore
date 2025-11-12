@@ -219,3 +219,5 @@ docs*.png
 regret*.png
 plots/
 artifacts/
+runs/
+sweep_logs/

@@ -2,20 +2,28 @@ from __future__ import annotations
 
 import importlib
 import sys
-from typing import Dict, Sequence
+from dataclasses import dataclass
+from typing import Any, Dict, Iterator, List, Mapping, Sequence, cast
 
 from .simulator import SimulationLog
 
 
-def learning_curve_data(log: SimulationLog) -> Dict[str, list[float]]:
+@dataclass(slots=True)
+class DocDistributionData:
+    doc_ids: List[str]
+    seen: List[float]
+    clicks: List[float]
+
+
+def learning_curve_data(log: SimulationLog) -> Dict[str, List[float]]:
     """Return per-round metrics for plotting learning curves."""
 
     metrics = log.round_metrics()
-    rounds = [item.round_index for item in metrics]
-    reward = [item.reward for item in metrics]
-    cumulative = [item.cumulative_reward for item in metrics]
-    ctr = [item.ctr for item in metrics]
-    data = {
+    rounds = [float(item.round_index) for item in metrics]
+    reward = [float(item.reward) for item in metrics]
+    cumulative = [float(item.cumulative_reward) for item in metrics]
+    ctr = [float(item.ctr) for item in metrics]
+    data: Dict[str, List[float]] = {
         "rounds": rounds,
         "reward": reward,
         "cumulative_reward": cumulative,
@@ -26,29 +34,25 @@ def learning_curve_data(log: SimulationLog) -> Dict[str, list[float]]:
     return data
 
 
-def doc_distribution_data(log: SimulationLog, doc_ids: Sequence[str]) -> Dict[str, list[float]]:
+def doc_distribution_data(log: SimulationLog, doc_ids: Sequence[str]) -> DocDistributionData:
     """Aggregate seen/click counts per document for plotting."""
 
-    summary = log.summary()
-    seen_counts = summary["seen_counts"]
-    click_counts = summary["click_counts"]
+    summary: Mapping[str, Any] = log.summary()
+    seen_counts = cast(Mapping[str, int], summary["seen_counts"])
+    click_counts = cast(Mapping[str, int], summary["click_counts"])
     ordered_ids = list(doc_ids)
-    seen = [seen_counts.get(doc_id, 0) for doc_id in ordered_ids]
-    clicks = [click_counts.get(doc_id, 0) for doc_id in ordered_ids]
-    return {
-        "doc_ids": ordered_ids,
-        "seen": seen,
-        "clicks": clicks,
-    }
+    seen = [float(seen_counts.get(doc_id, 0)) for doc_id in ordered_ids]
+    clicks = [float(click_counts.get(doc_id, 0)) for doc_id in ordered_ids]
+    return DocDistributionData(doc_ids=ordered_ids, seen=seen, clicks=clicks)
 
 
-def regret_curve_data(log: SimulationLog) -> Dict[str, list[float]]:
+def regret_curve_data(log: SimulationLog) -> Dict[str, List[float]]:
     if log.optimal_reward is None:
         raise ValueError("Regret data requires environments that expose optimal reward information.")
     metrics = log.round_metrics()
-    rounds = [item.round_index for item in metrics]
-    instant = [item.instant_regret or 0.0 for item in metrics]
-    cumulative = [item.cumulative_regret or 0.0 for item in metrics]
+    rounds = [float(item.round_index) for item in metrics]
+    instant = [float(item.instant_regret or 0.0) for item in metrics]
+    cumulative = [float(item.cumulative_regret or 0.0) for item in metrics]
     return {
         "rounds": rounds,
         "instant_regret": instant,
@@ -106,7 +110,7 @@ def plot_learning_curves(
     fig, ax1 = plt.subplots(figsize=(9, 5))
     ax2 = ax1.twinx()
     colors = _color_cycle()
-    for log, label in zip(logs, labels):
+    for log, label in zip(logs, labels, strict=True):
         data = learning_curve_data(log)
         color = next(colors)
         ax1.plot(
@@ -145,18 +149,18 @@ def plot_doc_distribution(
     """Plot bar chart comparing seen vs click counts per document."""
 
     data = doc_distribution_data(log, doc_ids)
-    if not data["doc_ids"]:
+    if not data.doc_ids:
         raise ValueError("No document ids provided; cannot plot distribution.")
     plt = _require_matplotlib()
     fig, ax = plt.subplots(figsize=(8, 4.5))
-    positions = list(range(len(data["doc_ids"])))
+    positions = list(range(len(data.doc_ids)))
     width = 0.4
     seen_pos = [pos - width / 2 for pos in positions]
     click_pos = [pos + width / 2 for pos in positions]
-    ax.bar(seen_pos, data["seen"], width=width, label="Seen", color="tab:gray")
-    ax.bar(click_pos, data["clicks"], width=width, label="Clicks", color="tab:green")
+    ax.bar(seen_pos, data.seen, width=width, label="Seen", color="tab:gray")
+    ax.bar(click_pos, data.clicks, width=width, label="Clicks", color="tab:green")
     ax.set_xticks(positions)
-    ax.set_xticklabels(data["doc_ids"])
+    ax.set_xticklabels(data.doc_ids)
     ax.set_ylabel("Count")
     ax.set_xlabel("Document")
     ax.legend()
@@ -214,7 +218,7 @@ def plot_regret_curves(
     plt = _require_matplotlib()
     fig, ax = plt.subplots(figsize=(9, 5))
     colors = _color_cycle()
-    for log, label in zip(logs, labels):
+    for log, label in zip(logs, labels, strict=True):
         data = regret_curve_data(log)
         ax.plot(
             data["rounds"],
@@ -233,7 +237,7 @@ def plot_regret_curves(
     plt.close(fig)
 
 
-def _require_matplotlib():
+def _require_matplotlib() -> Any:
     try:
         matplotlib = importlib.import_module("matplotlib")
         if "matplotlib.pyplot" not in sys.modules:
@@ -246,7 +250,7 @@ def _require_matplotlib():
         ) from exc
 
 
-def _color_cycle():
+def _color_cycle() -> Iterator[str]:
     from itertools import cycle
 
     palette = [
