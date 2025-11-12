@@ -5,6 +5,7 @@ from random import Random
 from typing import Sequence
 
 from . import visualize
+from . import logging as log_utils
 from .environment import (
     CascadeEnvironment,
     DependentClickEnvironment,
@@ -122,6 +123,16 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Display plots interactively (GUI/Matplotlib backend required).",
     )
+    parser.add_argument(
+        "--log-json",
+        metavar="PATH",
+        help="Write full interaction log to PATH as JSON.",
+    )
+    parser.add_argument(
+        "--load-json",
+        metavar="PATH",
+        help="Load a previously saved simulation log (skips new simulation).",
+    )
     return parser
 
 
@@ -220,7 +231,7 @@ def create_environment(args: argparse.Namespace, documents: Sequence[Document]):
     raise ValueError(f"Unsupported model: {args.model}")
 
 
-def print_summary(summary: dict[str, object], doc_ids: Sequence[str], log) -> None:
+def print_summary(summary: dict[str, object], doc_ids: Sequence[str] | None, log) -> None:
     print(f"Rounds       : {summary['rounds']}")
     print(f"Total reward : {summary['total_reward']:.2f}")
     print(f"CTR          : {summary['ctr']:.4f}")
@@ -231,12 +242,13 @@ def print_summary(summary: dict[str, object], doc_ids: Sequence[str], log) -> No
             print(f"Cumulative regret        : {cumulative_regret:.4f}")
     print("Seen counts  :")
     seen_counts = summary["seen_counts"]
-    for doc_id in doc_ids:
+    ordered_ids = list(doc_ids) if doc_ids else list(seen_counts.keys())
+    for doc_id in ordered_ids:
         count = seen_counts.get(doc_id, 0)
         print(f"  {doc_id:>8} -> {count}")
     print("Click counts :")
     click_counts = summary["click_counts"]
-    for doc_id in doc_ids:
+    for doc_id in ordered_ids:
         count = click_counts.get(doc_id, 0)
         print(f"  {doc_id:>8} -> {count}")
 
@@ -244,16 +256,43 @@ def print_summary(summary: dict[str, object], doc_ids: Sequence[str], log) -> No
 def main(argv: Sequence[str] | None = None) -> None:
     parser = build_parser()
     args = parser.parse_args(argv)
-    try:
-        documents = parse_documents(args.doc)
-        env = create_environment(args, documents)
-    except ValueError as exc:
-        parser.error(str(exc))
-    policy = create_policy(args, env.doc_ids)
-    simulator = BanditSimulator(env, policy)
-    log = simulator.run(args.steps)
+    if args.load_json and args.log_json:
+        parser.error("--log-json cannot be combined with --load-json.")
+
+    metadata: dict[str, object] = {}
+    doc_ids: Sequence[str] | None = None
+    if args.load_json:
+        try:
+            log, metadata = log_utils.load_log(args.load_json)
+        except (OSError, ValueError) as exc:
+            parser.error(f"Failed to load log: {exc}")
+        doc_ids = metadata.get("doc_ids")
+    else:
+        try:
+            documents = parse_documents(args.doc)
+            env = create_environment(args, documents)
+        except ValueError as exc:
+            parser.error(str(exc))
+        policy = create_policy(args, env.doc_ids)
+        simulator = BanditSimulator(env, policy)
+        log = simulator.run(args.steps)
+        metadata = {
+            "doc_ids": list(env.doc_ids),
+            "model": args.model,
+            "algo": args.algo,
+            "steps": args.steps,
+            "seed": args.seed,
+        }
+        if args.log_json:
+            try:
+                log_utils.write_log(args.log_json, log, metadata=metadata)
+            except OSError as exc:
+                parser.error(f"Failed to write log: {exc}")
+        doc_ids = env.doc_ids
+
     summary = log.summary()
-    print_summary(summary, env.doc_ids, log)
+    doc_ids_for_usage = doc_ids or metadata.get("doc_ids")
+    print_summary(summary, doc_ids_for_usage, log)
     if args.plot_learning or args.plot_docs or args.plot_regret or args.show_plot:
         try:
             if args.plot_learning or args.show_plot:
@@ -265,7 +304,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             if args.plot_docs:
                 visualize.plot_doc_distribution(
                     log,
-                    doc_ids=env.doc_ids,
+                    doc_ids=doc_ids_for_usage or tuple(summary["seen_counts"].keys()),
                     output_path=args.plot_docs,
                     show=args.show_plot,
                 )

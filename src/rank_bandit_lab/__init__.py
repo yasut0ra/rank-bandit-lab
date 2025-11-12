@@ -12,6 +12,7 @@ from .policies import (
     UCB1Ranking,
 )
 from .simulator import BanditSimulator, SimulationLog
+from .logging import load_log, write_log, serialize_log
 from .visualize import (
     doc_distribution_data,
     learning_curve_data,
@@ -34,6 +35,9 @@ __all__ = [
     "SimulationLog",
     "ThompsonSamplingRanking",
     "UCB1Ranking",
+    "load_log",
+    "write_log",
+    "serialize_log",
     "doc_distribution_data",
     "learning_curve_data",
     "plot_doc_distribution",
