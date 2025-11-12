@@ -4,7 +4,8 @@ import argparse
 from random import Random
 from typing import Any, Mapping, Sequence, cast
 
-from . import logging as log_utils, scenario_loader, visualize
+from . import logging as log_utils
+from . import scenario_loader, visualize
 from .environment import (
     CascadeEnvironment,
     DependentClickEnvironment,
