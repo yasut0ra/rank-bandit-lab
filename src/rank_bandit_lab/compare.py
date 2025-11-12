@@ -4,7 +4,7 @@ import argparse
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable, List, Sequence
+from typing import Sequence
 
 from . import logging as log_utils
 from .simulator import SimulationLog

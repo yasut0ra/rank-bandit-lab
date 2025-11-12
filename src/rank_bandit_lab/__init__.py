@@ -5,6 +5,7 @@ from .environment import (
     DependentClickEnvironment,
     PositionBasedEnvironment,
 )
+from .logging import load_log, serialize_log, write_log
 from .policies import (
     EpsilonGreedyRanking,
     RankingPolicy,
@@ -12,19 +13,19 @@ from .policies import (
     ThompsonSamplingRanking,
     UCB1Ranking,
 )
+from .scenario_loader import list_scenarios, load_scenario
 from .simulator import BanditSimulator, SimulationLog
-from .logging import load_log, write_log, serialize_log
+from .types import Document, Interaction
 from .visualize import (
     doc_distribution_data,
     learning_curve_data,
-    plot_regret_curve,
     plot_doc_distribution,
     plot_learning_curve,
     plot_learning_curves,
+    plot_regret_curve,
     plot_regret_curves,
     regret_curve_data,
 )
-from .types import Document, Interaction
 from .scenario_loader import list_scenarios, load_scenario
 
 __all__ = [

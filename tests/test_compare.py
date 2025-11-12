@@ -1,8 +1,8 @@
-import unittest
-from pathlib import Path
 import tempfile
+from pathlib import Path
+import unittest
 
-from rank_bandit_lab.compare import summarize, summaries_to_table
+from rank_bandit_lab.compare import summaries_to_table, summarize
 from rank_bandit_lab.logging import write_log
 from rank_bandit_lab.simulator import SimulationLog
 from rank_bandit_lab.types import Interaction

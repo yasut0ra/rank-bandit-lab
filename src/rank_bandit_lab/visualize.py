@@ -106,7 +106,7 @@ def plot_learning_curves(
     fig, ax1 = plt.subplots(figsize=(9, 5))
     ax2 = ax1.twinx()
     colors = _color_cycle()
-    for log, label in zip(logs, labels):
+    for log, label in zip(logs, labels, strict=True):
         data = learning_curve_data(log)
         color = next(colors)
         ax1.plot(
@@ -214,7 +214,7 @@ def plot_regret_curves(
     plt = _require_matplotlib()
     fig, ax = plt.subplots(figsize=(9, 5))
     colors = _color_cycle()
-    for log, label in zip(logs, labels):
+    for log, label in zip(logs, labels, strict=True):
         data = regret_curve_data(log)
         ax.plot(
             data["rounds"],

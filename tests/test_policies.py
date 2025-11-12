@@ -3,9 +3,9 @@ from random import Random
 
 from rank_bandit_lab.policies import (
     EpsilonGreedyRanking,
+    SoftmaxRanking,
     ThompsonSamplingRanking,
     UCB1Ranking,
-    SoftmaxRanking,
 )
 from rank_bandit_lab.types import Interaction
 

@@ -4,9 +4,9 @@ import argparse
 from random import Random
 from typing import Sequence
 
-from . import visualize
 from . import logging as log_utils
 from . import scenario_loader
+from . import visualize
 from .environment import (
     CascadeEnvironment,
     DependentClickEnvironment,

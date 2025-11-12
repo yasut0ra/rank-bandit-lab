@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from random import Random
 from typing import Sequence, Tuple
-import math
 
 from .types import Interaction
 
