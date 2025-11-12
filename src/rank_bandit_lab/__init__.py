@@ -25,6 +25,7 @@ from .visualize import (
     regret_curve_data,
 )
 from .types import Document, Interaction
+from .scenario_loader import list_scenarios, load_scenario
 
 __all__ = [
     "BanditSimulator",
@@ -50,4 +51,6 @@ __all__ = [
     "plot_regret_curve",
     "plot_regret_curves",
     "regret_curve_data",
+    "list_scenarios",
+    "load_scenario",
 ]
