@@ -6,6 +6,7 @@ from typing import Sequence
 
 from . import visualize
 from . import logging as log_utils
+from . import scenario_loader
 from .environment import (
     CascadeEnvironment,
     DependentClickEnvironment,
@@ -110,6 +111,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="(DCM) Fallback satisfaction probability when not specified per doc.",
     )
     parser.add_argument("--seed", type=int, default=7, help="Base random seed.")
+    parser.add_argument(
+        "--scenario",
+        choices=scenario_loader.list_scenarios(),
+        help="Use a predefined scenario (overrides docs/bias defaults).",
+    )
     parser.add_argument(
         "--plot-learning",
         metavar="PATH",
@@ -275,6 +281,14 @@ def main(argv: Sequence[str] | None = None) -> None:
 
     metadata: dict[str, object] = {}
     doc_ids: Sequence[str] | None = None
+    scenario_data = None
+    scenario_doc_specs: Sequence[str] | None = None
+    if args.scenario:
+        scenario_data = scenario_loader.load_scenario(args.scenario)
+        scenario_doc_specs = [
+            f"{entry['id']}={entry['attraction']}"
+            for entry in scenario_data.get("documents", [])
+        ]
     if args.load_json:
         try:
             log, metadata = log_utils.load_log(args.load_json)
@@ -282,20 +296,34 @@ def main(argv: Sequence[str] | None = None) -> None:
             parser.error(f"Failed to load log: {exc}")
         doc_ids = metadata.get("doc_ids")
     else:
+        doc_specs = args.doc if args.doc else scenario_doc_specs
         try:
-            documents = parse_documents(args.doc)
-            env = create_environment(args, documents)
+            documents = parse_documents(doc_specs)
         except ValueError as exc:
             parser.error(str(exc))
-        policy = create_policy(args, env.doc_ids)
+        env_args = argparse.Namespace(**vars(args))
+        if scenario_data:
+            if env_args.position_biases is None and scenario_data.get("position_biases"):
+                env_args.position_biases = list(scenario_data["position_biases"])
+            if env_args.doc_satisfaction is None and scenario_data.get("satisfaction"):
+                env_args.doc_satisfaction = [
+                    f"{doc_id}={prob}"
+                    for doc_id, prob in scenario_data["satisfaction"].items()
+                ]
+        try:
+            env = create_environment(env_args, documents)
+        except ValueError as exc:
+            parser.error(str(exc))
+        policy = create_policy(env_args, env.doc_ids)
         simulator = BanditSimulator(env, policy)
-        log = simulator.run(args.steps)
+        log = simulator.run(env_args.steps)
         metadata = {
             "doc_ids": list(env.doc_ids),
-            "model": args.model,
-            "algo": args.algo,
-            "steps": args.steps,
-            "seed": args.seed,
+            "model": env_args.model,
+            "algo": env_args.algo,
+            "steps": env_args.steps,
+            "seed": env_args.seed,
+            "scenario": args.scenario,
         }
         if args.log_json:
             try:
