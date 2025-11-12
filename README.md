@@ -48,6 +48,17 @@ rank-bandit-lab --steps 5000 --slate-size 3 \
 
 リグレットは「真の誘引確率を知っているオラクルが固定スレートで得られる期待報酬」と比較して算出します。`plot_regret_curve` や `regret_curve_data` を使うと、累積リグレットや瞬時リグレットの推移を可視化できます。
 
+### ログの保存・再生
+全ラウンドの挙動を JSON に残したい場合は `--log-json` を使います。保存したファイルは `--load-json` を指定すると再シュミレーションなしで統計表示やプロットに利用できます。
+
+```bash
+rank-bandit-lab --steps 3000 --slate-size 3 --algo thompson \
+  --log-json runs/thompson.json
+
+rank-bandit-lab --load-json runs/thompson.json \
+  --plot-learning replay-learning.png
+```
+
 ### API で扱う場合
 ```python
 from random import Random
@@ -56,8 +67,10 @@ from rank_bandit_lab import (
     CascadeEnvironment,
     Document,
     EpsilonGreedyRanking,
+    load_log,
     plot_learning_curve,
     plot_regret_curve,
+    write_log,
 )
 
 documents = [
@@ -71,6 +84,9 @@ log = BanditSimulator(env, policy).run(rounds=1000)
 print(log.summary())
 plot_learning_curve(log, output_path="learning.png")
 plot_regret_curve(log, output_path="regret.png")
+write_log("latest.json", log, metadata={"doc_ids": [doc.doc_id for doc in documents]})
+# 後で
+log2, metadata = load_log("latest.json")
 ```
 
 `SimulationLog` では `total_reward` がクリック数の合計となり、PBM/DCM のように複数クリックが発生した場合にも集計されます。
