@@ -1,0 +1,22 @@
+{
+  "description": "E-commerce slate with long-tail products and weak head item.",
+  "documents": [
+    {"id": "featured", "attraction": 0.35},
+    {"id": "recommended", "attraction": 0.30},
+    {"id": "bundle", "attraction": 0.25},
+    {"id": "accessory", "attraction": 0.18},
+    {"id": "clearance", "attraction": 0.12},
+    {"id": "new-arrival", "attraction": 0.20},
+    {"id": "gift-card", "attraction": 0.08}
+  ],
+  "position_biases": [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3],
+  "satisfaction": {
+    "featured": 0.85,
+    "recommended": 0.65,
+    "bundle": 0.50,
+    "accessory": 0.40,
+    "clearance": 0.35,
+    "new-arrival": 0.55,
+    "gift-card": 0.25
+  }
+}
