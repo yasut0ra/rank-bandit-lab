@@ -1,0 +1,20 @@
+{
+  "description": "Medium-sized news scenario with headliner and supporting stories.",
+  "documents": [
+    {"id": "headline", "attraction": 0.48},
+    {"id": "politics", "attraction": 0.35},
+    {"id": "economy", "attraction": 0.30},
+    {"id": "sports", "attraction": 0.22},
+    {"id": "tech", "attraction": 0.18},
+    {"id": "culture", "attraction": 0.12}
+  ],
+  "position_biases": [0.95, 0.85, 0.75, 0.65, 0.55, 0.45],
+  "satisfaction": {
+    "headline": 0.75,
+    "politics": 0.55,
+    "economy": 0.50,
+    "sports": 0.45,
+    "tech": 0.50,
+    "culture": 0.40
+  }
+}
