@@ -216,5 +216,6 @@ __marimo__/
 # Simulation artifacts
 learning*.png
 docs*.png
+regret*.png
 plots/
 artifacts/
