@@ -37,6 +37,9 @@ rank-bandit-lab --model dependent --slate-size 3 \
 
 ドキュメント構成を変えたい場合は `--doc docA=0.45 --doc docB=0.2 ...` のように複数指定します。DCM の満足確率 (`--doc-satisfaction`) を指定しない場合は `--default-satisfaction` (既定 0.5) が使われます。
 
+### シナリオプリセット
+`--scenario news_headlines` のように指定すると、定義済みのドキュメントやバイアスを読み込んで実験できます。利用可能な値は `news_headlines`, `ecommerce_longtail` など `rank_bandit_lab.scenarios` 配下の JSON です。
+
 ### ビジュアライズ
 `pip install matplotlib` を行うと、学習曲線やドキュメント分布を PNG などで保存できます。
 
