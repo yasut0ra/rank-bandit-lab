@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from importlib import resources
-from typing import Dict
+from typing import Any, Dict
 
 SCENARIO_PACKAGE = "rank_bandit_lab.scenarios"
 
@@ -16,7 +16,7 @@ def list_scenarios() -> list[str]:
     return contents
 
 
-def load_scenario(name: str) -> Dict:
+def load_scenario(name: str) -> Dict[str, Any]:
     resource_name = f"{name}.json"
     try:
         data = resources.files(SCENARIO_PACKAGE).joinpath(resource_name).read_text()

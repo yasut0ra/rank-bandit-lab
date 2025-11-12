@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import argparse
 from random import Random
-from typing import Sequence
+from typing import Any, Mapping, Sequence, cast
 
-from . import logging as log_utils
-from . import scenario_loader, visualize
+from . import logging as log_utils, scenario_loader, visualize
 from .environment import (
     CascadeEnvironment,
     DependentClickEnvironment,
@@ -18,7 +17,7 @@ from .policies import (
     ThompsonSamplingRanking,
     UCB1Ranking,
 )
-from .simulator import BanditSimulator
+from .simulator import BanditSimulator, SimulationLog
 from .types import Document
 
 DEFAULT_DOCUMENTS = (
@@ -224,7 +223,9 @@ def create_policy(args: argparse.Namespace, doc_ids: Sequence[str]) -> RankingPo
     raise ValueError(f"Unsupported algorithm: {args.algo}")
 
 
-def create_environment(args: argparse.Namespace, documents: Sequence[Document]):
+def create_environment(
+    args: argparse.Namespace, documents: Sequence[Document]
+) -> CascadeEnvironment | PositionBasedEnvironment | DependentClickEnvironment:
     env_rng = Random(args.seed)
     if args.model == "cascade":
         return CascadeEnvironment(documents=documents, slate_size=args.slate_size, rng=env_rng)
@@ -250,7 +251,9 @@ def create_environment(args: argparse.Namespace, documents: Sequence[Document]):
     raise ValueError(f"Unsupported model: {args.model}")
 
 
-def print_summary(summary: dict[str, object], doc_ids: Sequence[str] | None, log) -> None:
+def print_summary(
+    summary: Mapping[str, Any], doc_ids: Sequence[str] | None, log: SimulationLog
+) -> None:
     print(f"Rounds       : {summary['rounds']}")
     print(f"Total reward : {summary['total_reward']:.2f}")
     print(f"CTR          : {summary['ctr']:.4f}")
@@ -260,13 +263,13 @@ def print_summary(summary: dict[str, object], doc_ids: Sequence[str] | None, log
         if cumulative_regret is not None:
             print(f"Cumulative regret        : {cumulative_regret:.4f}")
     print("Seen counts  :")
-    seen_counts = summary["seen_counts"]
+    seen_counts = cast(Mapping[str, int], summary["seen_counts"])
     ordered_ids = list(doc_ids) if doc_ids else list(seen_counts.keys())
     for doc_id in ordered_ids:
         count = seen_counts.get(doc_id, 0)
         print(f"  {doc_id:>8} -> {count}")
     print("Click counts :")
-    click_counts = summary["click_counts"]
+    click_counts = cast(Mapping[str, int], summary["click_counts"])
     for doc_id in ordered_ids:
         count = click_counts.get(doc_id, 0)
         print(f"  {doc_id:>8} -> {count}")
@@ -278,10 +281,10 @@ def main(argv: Sequence[str] | None = None) -> None:
     if args.load_json and args.log_json:
         parser.error("--log-json cannot be combined with --load-json.")
 
-    metadata: dict[str, object] = {}
+    metadata: dict[str, Any] = {}
     doc_ids: Sequence[str] | None = None
-    scenario_data = None
-    scenario_doc_specs: Sequence[str] | None = None
+    scenario_data: dict[str, Any] | None = None
+    scenario_doc_specs: list[str] | None = None
     if args.scenario:
         scenario_data = scenario_loader.load_scenario(args.scenario)
         scenario_doc_specs = [
@@ -293,9 +296,11 @@ def main(argv: Sequence[str] | None = None) -> None:
             log, metadata = log_utils.load_log(args.load_json)
         except (OSError, ValueError) as exc:
             parser.error(f"Failed to load log: {exc}")
-        doc_ids = metadata.get("doc_ids")
+        doc_ids = cast(Sequence[str] | None, metadata.get("doc_ids"))
     else:
-        doc_specs = args.doc if args.doc else scenario_doc_specs
+        doc_specs: Sequence[str] | None = args.doc if args.doc else scenario_doc_specs
+        if doc_specs is None:
+            parser.error("Either provide --doc entries or use --scenario.")
         try:
             documents = parse_documents(doc_specs)
         except ValueError as exc:
@@ -331,8 +336,8 @@ def main(argv: Sequence[str] | None = None) -> None:
                 parser.error(f"Failed to write log: {exc}")
         doc_ids = env.doc_ids
 
-    summary = log.summary()
-    doc_ids_for_usage = doc_ids or metadata.get("doc_ids")
+    summary = cast(Mapping[str, Any], log.summary())
+    doc_ids_for_usage = cast(Sequence[str] | None, doc_ids or metadata.get("doc_ids"))
     print_summary(summary, doc_ids_for_usage, log)
     if args.plot_learning or args.plot_docs or args.plot_regret or args.show_plot:
         try:
@@ -343,9 +348,12 @@ def main(argv: Sequence[str] | None = None) -> None:
                     show=args.show_plot,
                 )
             if args.plot_docs:
+                fallback_ids = list(
+                    cast(Mapping[str, int], summary["seen_counts"]).keys()
+                )
                 visualize.plot_doc_distribution(
                     log,
-                    doc_ids=doc_ids_for_usage or tuple(summary["seen_counts"].keys()),
+                    doc_ids=doc_ids_for_usage or fallback_ids,
                     output_path=args.plot_docs,
                     show=args.show_plot,
                 )

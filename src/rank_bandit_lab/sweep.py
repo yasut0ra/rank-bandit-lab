@@ -4,7 +4,7 @@ import argparse
 import json
 from dataclasses import asdict
 from pathlib import Path
-from typing import Dict, List, Sequence
+from typing import Any, Callable, Dict, Mapping, Sequence, cast
 
 from . import logging as log_utils
 from .cli import create_environment, create_policy, parse_documents
@@ -12,7 +12,7 @@ from .compare import LogSummary, summaries_to_table
 from .simulator import BanditSimulator
 from .visualize import plot_learning_curves, plot_regret_curves
 
-RUN_OVERRIDE_TYPES: Dict[str, callable] = {
+RUN_OVERRIDE_TYPES: Dict[str, Callable[[str], object]] = {
     "algo": str,
     "epsilon": float,
     "alpha_prior": float,
@@ -90,7 +90,7 @@ def run_sweep(args: argparse.Namespace) -> None:
 
     documents = parse_documents(args.doc)
 
-    summaries: List[LogSummary] = []
+    summaries: list[LogSummary] = []
     logs = []
     labels = []
 
@@ -112,13 +112,13 @@ def run_sweep(args: argparse.Namespace) -> None:
         log_path = output_dir / f"{label}.json"
         log_utils.write_log(log_path, log, metadata=metadata)
 
-        summary = log.summary()
+        summary = cast(Mapping[str, Any], log.summary())
         log_summary = LogSummary(
             label=label,
             path=str(log_path),
-            rounds=summary["rounds"],
-            ctr=summary["ctr"],
-            total_reward=summary["total_reward"],
+            rounds=int(summary["rounds"]),
+            ctr=float(summary["ctr"]),
+            total_reward=float(summary["total_reward"]),
             optimal_reward=log.optimal_reward,
             cumulative_regret=log.cumulative_regret(),
             algo=run_args.algo,
