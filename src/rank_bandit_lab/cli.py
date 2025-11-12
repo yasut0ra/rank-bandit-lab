@@ -10,7 +10,12 @@ from .environment import (
     DependentClickEnvironment,
     PositionBasedEnvironment,
 )
-from .policies import EpsilonGreedyRanking, RankingPolicy, ThompsonSamplingRanking
+from .policies import (
+    EpsilonGreedyRanking,
+    RankingPolicy,
+    ThompsonSamplingRanking,
+    UCB1Ranking,
+)
 from .simulator import BanditSimulator
 from .types import Document
 
@@ -30,7 +35,11 @@ def build_parser() -> argparse.ArgumentParser:
         prog="rank-bandit-lab",
         description="Run simple ranking bandit simulations.",
     )
-    parser.add_argument("--algo", choices=("epsilon", "thompson"), default="epsilon")
+    parser.add_argument(
+        "--algo",
+        choices=("epsilon", "thompson", "ucb"),
+        default="epsilon",
+    )
     parser.add_argument(
         "--model",
         choices=("cascade", "position", "dependent"),
@@ -61,6 +70,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=1.0,
         help="Beta prior for Thompson sampling.",
+    )
+    parser.add_argument(
+        "--ucb-confidence",
+        type=float,
+        default=1.0,
+        help="Exploration scale for UCB1 (larger -> more exploration).",
     )
     parser.add_argument(
         "--doc",
@@ -167,6 +182,13 @@ def create_policy(args: argparse.Namespace, doc_ids: Sequence[str]) -> RankingPo
             slate_size=args.slate_size,
             alpha_prior=args.alpha_prior,
             beta_prior=args.beta_prior,
+            rng=policy_rng,
+        )
+    if args.algo == "ucb":
+        return UCB1Ranking(
+            doc_ids=doc_ids,
+            slate_size=args.slate_size,
+            confidence=args.ucb_confidence,
             rng=policy_rng,
         )
     raise ValueError(f"Unsupported algorithm: {args.algo}")

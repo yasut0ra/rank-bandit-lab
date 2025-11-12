@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from random import Random
 from typing import Sequence, Tuple
+import math
 
 from .types import Interaction
 
@@ -139,3 +140,44 @@ class ThompsonSamplingRanking(RankingPolicy):
         else:
             # No click was observed; every seen item was a failure.
             pass
+
+
+class UCB1Ranking(RankingPolicy):
+    """Upper Confidence Bound policy with per-document arms."""
+
+    def __init__(
+        self,
+        doc_ids: Sequence[str],
+        slate_size: int,
+        confidence: float = 1.0,
+        rng: Random | None = None,
+    ) -> None:
+        super().__init__(doc_ids, slate_size, rng)
+        if confidence <= 0.0:
+            raise ValueError("confidence must be > 0.")
+        self._confidence = confidence
+        self._stats = {doc_id: ArmStats() for doc_id in self.doc_ids}
+        self._rounds = 0
+
+    def select_slate(self) -> Tuple[str, ...]:
+        ranked = sorted(self.doc_ids, key=self._score, reverse=True)
+        return tuple(ranked[: self.slate_size])
+
+    def update(self, interaction: Interaction) -> None:
+        self._rounds += 1
+        clicked = set(interaction.clicked_doc_ids)
+        for doc_id in interaction.seen:
+            stats = self._stats[doc_id]
+            stats.impressions += 1
+            if doc_id in clicked:
+                stats.clicks += 1
+
+    def _score(self, doc_id: str) -> float:
+        stats = self._stats[doc_id]
+        if stats.impressions == 0:
+            return float("inf")
+        mean = stats.clicks / stats.impressions
+        exploration = self._confidence * math.sqrt(
+            math.log(self._rounds + 1) / stats.impressions
+        )
+        return mean + exploration

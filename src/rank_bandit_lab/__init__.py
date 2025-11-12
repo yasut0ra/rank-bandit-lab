@@ -5,7 +5,12 @@ from .environment import (
     DependentClickEnvironment,
     PositionBasedEnvironment,
 )
-from .policies import EpsilonGreedyRanking, RankingPolicy, ThompsonSamplingRanking
+from .policies import (
+    EpsilonGreedyRanking,
+    RankingPolicy,
+    ThompsonSamplingRanking,
+    UCB1Ranking,
+)
 from .simulator import BanditSimulator, SimulationLog
 from .visualize import (
     doc_distribution_data,
@@ -28,6 +33,7 @@ __all__ = [
     "RankingPolicy",
     "SimulationLog",
     "ThompsonSamplingRanking",
+    "UCB1Ranking",
     "doc_distribution_data",
     "learning_curve_data",
     "plot_doc_distribution",
