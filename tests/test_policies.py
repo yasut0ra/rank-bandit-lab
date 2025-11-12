@@ -1,7 +1,11 @@
 import unittest
 from random import Random
 
-from rank_bandit_lab.policies import EpsilonGreedyRanking, ThompsonSamplingRanking
+from rank_bandit_lab.policies import (
+    EpsilonGreedyRanking,
+    ThompsonSamplingRanking,
+    UCB1Ranking,
+)
 from rank_bandit_lab.types import Interaction
 
 
@@ -37,3 +41,17 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(policy._failures["b"], 1)  # type: ignore[attr-defined]
         slate = policy.select_slate()
         self.assertEqual(len(slate), 1)
+
+    def test_ucb_prefers_document_with_more_clicks(self) -> None:
+        policy = UCB1Ranking(
+            doc_ids=["a", "b"],
+            slate_size=1,
+            confidence=0.5,
+            rng=Random(1),
+        )
+        for _ in range(5):
+            policy.update(make_interaction(("a",), ("a",), 0))
+        for _ in range(5):
+            policy.update(make_interaction(("b",), ("b",), None))
+        slate = policy.select_slate()
+        self.assertEqual(slate[0], "a")
