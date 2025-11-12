@@ -8,6 +8,7 @@ from .environment import (
 from .policies import (
     EpsilonGreedyRanking,
     RankingPolicy,
+    SoftmaxRanking,
     ThompsonSamplingRanking,
     UCB1Ranking,
 )
@@ -34,6 +35,7 @@ __all__ = [
     "Interaction",
     "PositionBasedEnvironment",
     "RankingPolicy",
+    "SoftmaxRanking",
     "SimulationLog",
     "ThompsonSamplingRanking",
     "UCB1Ranking",
