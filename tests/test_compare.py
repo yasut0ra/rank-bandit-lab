@@ -1,6 +1,6 @@
 import tempfile
-from pathlib import Path
 import unittest
+from pathlib import Path
 
 from rank_bandit_lab.compare import summaries_to_table, summarize
 from rank_bandit_lab.logging import write_log

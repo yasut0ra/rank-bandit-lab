@@ -4,7 +4,6 @@ import json
 from importlib import resources
 from typing import Dict
 
-
 SCENARIO_PACKAGE = "rank_bandit_lab.scenarios"
 
 

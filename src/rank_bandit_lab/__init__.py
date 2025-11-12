@@ -26,7 +26,6 @@ from .visualize import (
     plot_regret_curves,
     regret_curve_data,
 )
-from .scenario_loader import list_scenarios, load_scenario
 
 __all__ = [
     "BanditSimulator",

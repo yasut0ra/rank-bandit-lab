@@ -7,15 +7,10 @@ from pathlib import Path
 from typing import Dict, List, Sequence
 
 from . import logging as log_utils
-from .cli import (
-    create_environment,
-    create_policy,
-    parse_documents,
-)
+from .cli import create_environment, create_policy, parse_documents
 from .compare import LogSummary, summaries_to_table
 from .simulator import BanditSimulator
 from .visualize import plot_learning_curves, plot_regret_curves
-
 
 RUN_OVERRIDE_TYPES: Dict[str, callable] = {
     "algo": str,
