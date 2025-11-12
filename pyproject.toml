@@ -28,10 +28,12 @@ rank-bandit-lab-sweep = "rank_bandit_lab.sweep:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rank_bandit_lab"]
+package-data = { "rank_bandit_lab" = ["scenarios/*.json"] }
 
 [tool.hatch.build.targets.sdist]
 include = [
   "src/rank_bandit_lab",
   "README.md",
   "LICENSE",
+  "src/rank_bandit_lab/scenarios/*.json",
 ]
