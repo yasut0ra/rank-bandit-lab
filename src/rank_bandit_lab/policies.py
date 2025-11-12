@@ -181,3 +181,55 @@ class UCB1Ranking(RankingPolicy):
             math.log(self._rounds + 1) / stats.impressions
         )
         return mean + exploration
+
+
+class SoftmaxRanking(RankingPolicy):
+    """Boltzmann (softmax) exploration policy for ranking."""
+
+    def __init__(
+        self,
+        doc_ids: Sequence[str],
+        slate_size: int,
+        temperature: float = 0.1,
+        rng: Random | None = None,
+    ) -> None:
+        super().__init__(doc_ids, slate_size, rng)
+        if temperature <= 0.0:
+            raise ValueError("temperature must be > 0.")
+        self._temperature = temperature
+        self._stats = {doc_id: ArmStats() for doc_id in self.doc_ids}
+
+    def select_slate(self) -> Tuple[str, ...]:
+        remaining = list(self.doc_ids)
+        slate: list[str] = []
+        for _ in range(self.slate_size):
+            weights = [self._weight(doc_id) for doc_id in remaining]
+            total = sum(weights)
+            if total == 0:
+                self._rng.shuffle(remaining)
+                slate.extend(remaining[: self.slate_size - len(slate)])
+                break
+            pick = self._rng.random() * total
+            cumulative = 0.0
+            for idx, doc_id in enumerate(remaining):
+                cumulative += weights[idx]
+                if pick <= cumulative:
+                    slate.append(doc_id)
+                    remaining.pop(idx)
+                    break
+        return tuple(slate)
+
+    def _weight(self, doc_id: str) -> float:
+        stats = self._stats[doc_id]
+        mean = stats.clicks / stats.impressions if stats.impressions else 0.5
+        return math.exp(mean / self._temperature)
+
+    def update(self, interaction: Interaction) -> None:
+        clicked = set(interaction.clicked_doc_ids)
+        if not clicked and interaction.clicked_doc_id:
+            clicked.add(interaction.clicked_doc_id)
+        for doc_id in interaction.seen:
+            stats = self._stats[doc_id]
+            stats.impressions += 1
+            if doc_id in clicked:
+                stats.clicks += 1
