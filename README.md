@@ -4,7 +4,7 @@
 
 ## 主なコンポーネント
 - `CascadeEnvironment` / `PositionBasedEnvironment` / `DependentClickEnvironment`: 異なるクリックモデルを切り替え可能なシミュレーション環境。
-- `EpsilonGreedyRanking` / `ThompsonSamplingRanking` / `UCB1Ranking`: クリックフィードバックのみを使う基本的なランキングバンディット方策。
+- `EpsilonGreedyRanking` / `ThompsonSamplingRanking` / `UCB1Ranking` / `SoftmaxRanking`: クリックフィードバックのみを使う基本的なランキングバンディット方策。
 - `BanditSimulator`: 方策を環境で反復実行し、CTR や各ドキュメントの露出/クリック回数を収集。
 - CLI (`rank-bandit-lab`): サンプルシナリオや任意の `doc_id=確率` 指定でシミュレーションを一発実行し、最適報酬との差分（リグレット）も追跡。
 
@@ -22,6 +22,9 @@ rank-bandit-lab --algo epsilon --epsilon 0.15 --steps 3000 --slate-size 3
 
 # 上限信頼区間 (UCB1)
 rank-bandit-lab --algo ucb --ucb-confidence 1.5 --steps 3000 --slate-size 3
+
+# ソフトマックス探索
+rank-bandit-lab --algo softmax --softmax-temp 0.2 --steps 3000 --slate-size 3
 
 # 位置バイアスを持つ Position-Based Model
 rank-bandit-lab --model position --slate-size 3 \
