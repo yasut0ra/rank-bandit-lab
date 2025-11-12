@@ -40,6 +40,8 @@ rank-bandit-lab --model dependent --slate-size 3 \
 ### シナリオプリセット
 `--scenario news_headlines` のように指定すると、定義済みのドキュメントやバイアスを読み込んで実験できます。利用可能な値は `news_headlines`, `ecommerce_longtail` など `rank_bandit_lab.scenarios` 配下の JSON です。
 
+詳細な流れは `docs/TUTORIAL.md` と `notebooks/bandit_walkthrough.ipynb` を参照してください。CLI → ログ → 可視化 → スイープの一連の操作例がまとまっています。
+
 ### ビジュアライズ
 `pip install matplotlib` を行うと、学習曲線やドキュメント分布を PNG などで保存できます。
 
