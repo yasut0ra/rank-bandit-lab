@@ -114,3 +114,14 @@ log2, metadata = load_log("latest.json")
 ```
 python -m unittest discover -s tests -v
 ```
+
+## 開発者向け
+
+lint / 型チェック:
+
+```
+ruff check .
+mypy src
+```
+
+CI は GitHub Actions (`.github/workflows/ci.yml`) で ruff / mypy / unittest を実行しています。
