@@ -14,6 +14,7 @@ from .environment import (
 from .policies import (
     EpsilonGreedyRanking,
     RankingPolicy,
+    SoftmaxRanking,
     ThompsonSamplingRanking,
     UCB1Ranking,
 )
@@ -38,7 +39,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--algo",
-        choices=("epsilon", "thompson", "ucb"),
+        choices=("epsilon", "thompson", "ucb", "softmax"),
         default="epsilon",
     )
     parser.add_argument(
@@ -77,6 +78,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=1.0,
         help="Exploration scale for UCB1 (larger -> more exploration).",
+    )
+    parser.add_argument(
+        "--softmax-temp",
+        type=float,
+        default=0.1,
+        help="Temperature for softmax/Boltzmann exploration.",
     )
     parser.add_argument(
         "--doc",
@@ -200,6 +207,13 @@ def create_policy(args: argparse.Namespace, doc_ids: Sequence[str]) -> RankingPo
             doc_ids=doc_ids,
             slate_size=args.slate_size,
             confidence=args.ucb_confidence,
+            rng=policy_rng,
+        )
+    if args.algo == "softmax":
+        return SoftmaxRanking(
+            doc_ids=doc_ids,
+            slate_size=args.slate_size,
+            temperature=args.softmax_temp,
             rng=policy_rng,
         )
     raise ValueError(f"Unsupported algorithm: {args.algo}")
