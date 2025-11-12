@@ -57,6 +57,9 @@ rank-bandit-lab --steps 3000 --slate-size 3 --algo thompson \
 
 rank-bandit-lab --load-json runs/thompson.json \
   --plot-learning replay-learning.png
+
+# ログ比較
+rank-bandit-lab-compare runs/*.json --sort-by regret --plot-regret compare-regret.png
 ```
 
 ### API で扱う場合
