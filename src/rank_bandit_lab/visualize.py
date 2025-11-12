@@ -94,6 +94,48 @@ def plot_learning_curve(
     plt.close(fig)
 
 
+def plot_learning_curves(
+    logs: Sequence[SimulationLog],
+    labels: Sequence[str],
+    output_path: str | None = None,
+    show: bool = False,
+) -> None:
+    if not logs:
+        raise ValueError("No logs provided for learning curve comparison.")
+    plt = _require_matplotlib()
+    fig, ax1 = plt.subplots(figsize=(9, 5))
+    ax2 = ax1.twinx()
+    colors = _color_cycle()
+    for log, label in zip(logs, labels):
+        data = learning_curve_data(log)
+        color = next(colors)
+        ax1.plot(
+            data["rounds"],
+            data["cumulative_reward"],
+            label=f"{label} cumulative",
+            color=color,
+        )
+        ax2.plot(
+            data["rounds"],
+            data["ctr"],
+            label=f"{label} CTR",
+            linestyle="--",
+            color=color,
+        )
+    ax1.set_xlabel("Round")
+    ax1.set_ylabel("Cumulative Reward")
+    ax2.set_ylabel("CTR")
+    lines, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    fig.legend(lines + lines2, labels1 + labels2, loc="upper center", ncol=2)
+    fig.tight_layout()
+    if output_path:
+        fig.savefig(output_path, bbox_inches="tight")
+    if show:
+        plt.show()
+    plt.close(fig)
+
+
 def plot_doc_distribution(
     log: SimulationLog,
     doc_ids: Sequence[str],
@@ -161,6 +203,36 @@ def plot_regret_curve(
     plt.close(fig)
 
 
+def plot_regret_curves(
+    logs: Sequence[SimulationLog],
+    labels: Sequence[str],
+    output_path: str | None = None,
+    show: bool = False,
+) -> None:
+    if not logs:
+        raise ValueError("No logs provided for regret comparison.")
+    plt = _require_matplotlib()
+    fig, ax = plt.subplots(figsize=(9, 5))
+    colors = _color_cycle()
+    for log, label in zip(logs, labels):
+        data = regret_curve_data(log)
+        ax.plot(
+            data["rounds"],
+            data["cumulative_regret"],
+            label=label,
+            color=next(colors),
+        )
+    ax.set_xlabel("Round")
+    ax.set_ylabel("Cumulative Regret")
+    ax.legend()
+    fig.tight_layout()
+    if output_path:
+        fig.savefig(output_path, bbox_inches="tight")
+    if show:
+        plt.show()
+    plt.close(fig)
+
+
 def _require_matplotlib():
     try:
         matplotlib = importlib.import_module("matplotlib")
@@ -172,3 +244,21 @@ def _require_matplotlib():
         raise ImportError(
             "matplotlib is required for plotting. Install it via 'pip install matplotlib'."
         ) from exc
+
+
+def _color_cycle():
+    from itertools import cycle
+
+    palette = [
+        "tab:blue",
+        "tab:orange",
+        "tab:green",
+        "tab:red",
+        "tab:purple",
+        "tab:brown",
+        "tab:pink",
+        "tab:gray",
+        "tab:olive",
+        "tab:cyan",
+    ]
+    return cycle(palette)

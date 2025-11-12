@@ -19,6 +19,8 @@ from .visualize import (
     plot_regret_curve,
     plot_doc_distribution,
     plot_learning_curve,
+    plot_learning_curves,
+    plot_regret_curves,
     regret_curve_data,
 )
 from .types import Document, Interaction
@@ -42,6 +44,8 @@ __all__ = [
     "learning_curve_data",
     "plot_doc_distribution",
     "plot_learning_curve",
+    "plot_learning_curves",
     "plot_regret_curve",
+    "plot_regret_curves",
     "regret_curve_data",
 ]

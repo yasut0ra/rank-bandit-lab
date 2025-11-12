@@ -23,6 +23,7 @@ classifiers = [
 
 [project.scripts]
 rank-bandit-lab = "rank_bandit_lab.cli:main"
+rank-bandit-lab-compare = "rank_bandit_lab.compare:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/rank_bandit_lab"]
