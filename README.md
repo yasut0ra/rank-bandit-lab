@@ -60,6 +60,14 @@ rank-bandit-lab --load-json runs/thompson.json \
 
 # ログ比較
 rank-bandit-lab-compare runs/*.json --sort-by regret --plot-regret compare-regret.png
+
+# パラメータスイープ
+rank-bandit-lab-sweep \
+  --run eps05:algo=epsilon,epsilon=0.05 \
+  --run eps15:algo=epsilon,epsilon=0.15 \
+  --run ucb07:algo=ucb,ucb_confidence=0.7 \
+  --steps 4000 --slate-size 3 \
+  --output-dir sweep_logs --summary-json sweep_logs/summary.json
 ```
 
 ### API で扱う場合
