@@ -1,0 +1,22 @@
+{
+  "description": "Video streaming home feed with strong leading trailer and varied niche genres.",
+  "documents": [
+    {"id": "original-series", "attraction": 0.52},
+    {"id": "trending-movie", "attraction": 0.40},
+    {"id": "family-film", "attraction": 0.28},
+    {"id": "anime", "attraction": 0.25},
+    {"id": "documentary", "attraction": 0.22},
+    {"id": "classic-film", "attraction": 0.15},
+    {"id": "indie", "attraction": 0.12}
+  ],
+  "position_biases": [0.97, 0.90, 0.82, 0.74, 0.66, 0.58, 0.50],
+  "satisfaction": {
+    "original-series": 0.80,
+    "trending-movie": 0.65,
+    "family-film": 0.55,
+    "anime": 0.60,
+    "documentary": 0.45,
+    "classic-film": 0.35,
+    "indie": 0.30
+  }
+}
