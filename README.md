@@ -38,9 +38,19 @@ rank-bandit-lab --model dependent --slate-size 3 \
 ドキュメント構成を変えたい場合は `--doc docA=0.45 --doc docB=0.2 ...` のように複数指定します。DCM の満足確率 (`--doc-satisfaction`) を指定しない場合は `--default-satisfaction` (既定 0.5) が使われます。
 
 ### シナリオプリセット
-`--scenario news_headlines` のように指定すると、定義済みのドキュメントやバイアスを読み込んで実験できます。利用可能な値は `news_headlines`, `ecommerce_longtail` など `rank_bandit_lab.scenarios` 配下の JSON です。
+`--scenario <name>` を指定すると、定義済みのドキュメント・バイアス・満足確率を一括ロードできます。代表的なものは以下の通りです。
 
-詳細な流れは `docs/TUTORIAL.md` と `notebooks/bandit_walkthrough.ipynb` を参照してください。CLI → ログ → 可視化 → スイープの一連の操作例がまとまっています。
+| シナリオ | 想定ユースケース | 特徴 |
+| --- | --- | --- |
+| `news_headlines` | 総合ニュース | 強いヘッドラインと二番手の記事、程よいロングテール |
+| `ecommerce_longtail` | EC トップカテゴリ | 売れ筋と在庫処分が混在する長めのリスト |
+| `video_streaming` | 動画サービス | オリジナル作品やジャンルごとの人気差を再現 |
+| `education_catalog` | オンライン講座 | 初級〜上級講座の混在と満足度の差をモデリング |
+
+追加シナリオは `rank_bandit_lab.scenarios` 以下の JSON を増やすだけで読み込めます。CLI から確認する場合は
+`python - <<'PY' ... list_scenarios()` や `rank-bandit_lab.scenario_loader.list_scenarios()` を使ってください。
+
+詳細な流れは `docs/TUTORIAL.md` と `notebooks/bandit_walkthrough.ipynb`、シナリオ一覧は `notebooks/scenario_gallery.ipynb` を参照してください。CLI → ログ → 可視化 → スイープの一連の操作例がまとまっています。
 
 ### ビジュアライズ
 `pip install matplotlib` を行うと、学習曲線やドキュメント分布を PNG などで保存できます。
