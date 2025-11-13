@@ -1,0 +1,24 @@
+{
+  "description": "Online education catalog mixing popular foundation courses with advanced electives.",
+  "documents": [
+    {"id": "data-science-bootcamp", "attraction": 0.42},
+    {"id": "intro-python", "attraction": 0.38},
+    {"id": "ml-advanced", "attraction": 0.31},
+    {"id": "cloud-fundamentals", "attraction": 0.27},
+    {"id": "product-management", "attraction": 0.22},
+    {"id": "ux-research", "attraction": 0.18},
+    {"id": "career-coaching", "attraction": 0.16},
+    {"id": "web3-seminar", "attraction": 0.12}
+  ],
+  "position_biases": [0.92, 0.84, 0.76, 0.68, 0.60, 0.52, 0.44, 0.36],
+  "satisfaction": {
+    "data-science-bootcamp": 0.70,
+    "intro-python": 0.65,
+    "ml-advanced": 0.60,
+    "cloud-fundamentals": 0.55,
+    "product-management": 0.45,
+    "ux-research": 0.40,
+    "career-coaching": 0.35,
+    "web3-seminar": 0.25
+  }
+}
