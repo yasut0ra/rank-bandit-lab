@@ -58,7 +58,20 @@ rank-bandit-lab-sweep \
 3. `plot_learning_curve` / `plot_regret_curve` で結果を可視化
 4. `write_log` で JSON 保存 → `compare` / `sweep` と組み合わせ
 
-## 4. Tips
+## 4. シナリオギャラリー
+
+現在読み込めるシナリオは `rank_bandit_lab.scenario_loader.list_scenarios()` で確認できます。
+
+```bash
+python - <<'PY'
+from rank_bandit_lab import scenario_loader
+print(scenario_loader.list_scenarios())
+PY
+```
+
+`notebooks/scenario_gallery.ipynb` では複数シナリオのクリック分布・リグレットを比較する例を掲載しています。ご自身の JSON を `src/rank_bandit_lab/scenarios/` に追加すると自動的に CLI からも選択できるようになります。
+
+## 5. Tips
 
 - ログはすべて JSON なので、お好みのツールで解析したり、他チームと共有する際に便利です。
 - シナリオ JSON を追加するだけで、資料に合わせた実験条件を簡単に配布できます。
