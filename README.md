@@ -50,7 +50,7 @@ rank-bandit-lab --model dependent --slate-size 3 \
 追加シナリオは `rank_bandit_lab.scenarios` 以下の JSON を増やすだけで読み込めます。CLI から確認する場合は
 `python - <<'PY' ... list_scenarios()` や `rank-bandit_lab.scenario_loader.list_scenarios()` を使ってください。
 
-詳細な流れは `docs/TUTORIAL.md` と `notebooks/bandit_walkthrough.ipynb`、シナリオ一覧は `notebooks/scenario_gallery.ipynb` を参照してください。CLI → ログ → 可視化 → スイープの一連の操作例がまとまっています。
+詳細な流れは `docs/TUTORIAL.md`、`notebooks/bandit_walkthrough.ipynb`（基本編）、`notebooks/scenario_gallery.ipynb`（プリセット比較）、`notebooks/sweep_comparison.ipynb`（スイープ活用）を参照してください。CLI → ログ → 可視化 → スイープの一連の操作例がまとまっています。
 
 ### ビジュアライズ
 `pip install matplotlib` を行うと、学習曲線やドキュメント分布を PNG などで保存できます。
