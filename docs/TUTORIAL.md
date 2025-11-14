@@ -58,7 +58,7 @@ rank-bandit-lab-sweep \
 3. `plot_learning_curve` / `plot_regret_curve` で結果を可視化
 4. `write_log` で JSON 保存 → `compare` / `sweep` と組み合わせ
 
-## 4. シナリオギャラリー
+## 4. シナリオギャラリー / スイープ比較
 
 現在読み込めるシナリオは `rank_bandit_lab.scenario_loader.list_scenarios()` で確認できます。
 
@@ -70,6 +70,8 @@ PY
 ```
 
 `notebooks/scenario_gallery.ipynb` では複数シナリオのクリック分布・リグレットを比較する例を掲載しています。ご自身の JSON を `src/rank_bandit_lab/scenarios/` に追加すると自動的に CLI からも選択できるようになります。
+
+`notebooks/sweep_comparison.ipynb` では `rank-bandit-lab-sweep` で生成したログを Notebook 上で読み込み、学習曲線・リグレット・CTR を比較する例を載せています。CLI との併用で解析がしやすくなるので、応用編として活用してください。
 
 ## 5. Tips
 
