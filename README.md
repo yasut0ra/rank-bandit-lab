@@ -137,3 +137,8 @@ mypy src
 ```
 
 CI は GitHub Actions (`.github/workflows/ci.yml`) で ruff / mypy / unittest を実行しています。
+
+## コントリビューション
+- 貢献の流れやテスト方法は [CONTRIBUTING.md](CONTRIBUTING.md) にまとめています。
+- 行動規範は [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) を参照してください。すべての Issue / PR / Discussion でのふるまいはこの規範に従います。
+- 仕様提案や大きな実装は、まず Issue でコンテキストを共有していただけると助かります。
