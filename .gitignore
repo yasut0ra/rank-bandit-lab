@@ -221,3 +221,6 @@ plots/
 artifacts/
 runs/
 sweep_logs/
+
+# Notebook artifacts
+notebooks/*.json
