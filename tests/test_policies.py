@@ -30,6 +30,25 @@ class PolicyTests(unittest.TestCase):
         self.assertEqual(slate[0], "a")
         self.assertEqual(len(slate), 2)
 
+    def test_epsilon_greedy_counts_all_clicked_docs(self) -> None:
+        policy = EpsilonGreedyRanking(
+            doc_ids=["a", "b", "c"],
+            slate_size=3,
+            epsilon=0.0,
+            rng=Random(1),
+        )
+        interaction = Interaction(
+            slate=("a", "b", "c"),
+            seen=("a", "b", "c"),
+            click_index=0,
+            reward=2.0,
+            click_positions=(0, 2),
+        )
+        policy.update(interaction)
+        self.assertEqual(policy._stats["a"].clicks, 1)  # type: ignore[attr-defined]
+        self.assertEqual(policy._stats["c"].clicks, 1)  # type: ignore[attr-defined]
+        self.assertEqual(policy._stats["b"].clicks, 0)  # type: ignore[attr-defined]
+
     def test_thompson_sampling_tracks_successes_and_failures(self) -> None:
         policy = ThompsonSamplingRanking(
             doc_ids=["a", "b"],
