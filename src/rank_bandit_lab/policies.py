@@ -88,9 +88,13 @@ class EpsilonGreedyRanking(RankingPolicy):
         for doc_id in interaction.seen:
             stats = self._stats[doc_id]
             stats.impressions += 1
-        clicked_doc = interaction.clicked_doc_id
-        if clicked_doc is not None:
-            self._stats[clicked_doc].clicks += 1
+        clicked_docs = interaction.clicked_doc_ids
+        if not clicked_docs:
+            clicked_doc = interaction.clicked_doc_id
+            if clicked_doc is not None:
+                clicked_docs = (clicked_doc,)
+        for doc_id in clicked_docs:
+            self._stats[doc_id].clicks += 1
 
     def _score(self, doc_id: str) -> float:
         stats = self._stats[doc_id]
